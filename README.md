@@ -1,50 +1,101 @@
 # OrderPilot AI
 
-AI-assisted delivery management system that helps small businesses manage orders, complaints, and delivery partner tasks.
+AI-assisted delivery management SaaS application that helps small businesses manage orders, customer complaints, and delivery partner tasks.
 
-This repository is split into two independent folders for easy local development and separate deployment.
-
-## Repository Structure
+This repository is structured into two separate directories for simple local execution and independent cloud deployments (e.g. Vercel for Frontend and Render for Backend):
 
 ```text
 orderPilot/
-  ├── frontend/      # React + Vite Frontend
-  └── backend/       # Node.js + Express Backend
+  ├── frontend/      # React.js + Vite + Tailwind CSS Frontend
+  └── backend/       # Node.js + Express + Supabase (PostgreSQL) + Gemini AI Backend
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Quick Start (Local Development)
 
-### 1. Run the Frontend
-
-Navigate to the `frontend` folder, install dependencies, and run the development server:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-The frontend will run at `http://localhost:5173`.
-
-### 2. Run the Backend
-
-Navigate to the `backend` folder, configure your environment details, seed the database, and run the server:
+### 1. Backend Setup (`/backend`)
 
 ```bash
 cd backend
-cp .env.example .env     # Copy & configure your database / Gemini credentials
+
+# Copy environment variables
+cp .env.example .env
+
+# Configure your backend/.env variables (PostgreSQL connection string & Gemini API key)
+# DATABASE_URL=postgresql://postgres:[password]@db.[ref].supabase.co:5432/postgres
+# GEMINI_API_KEY=your_gemini_api_key
+# JWT_SECRET=your_jwt_secret_key
+# CLIENT_URL=http://localhost:5173
+# PORT=5000
+
+# Install dependencies
 npm install
-npm run seed             # Initialize PostgreSQL schema and seed sample data
-npm run dev              # Run server with nodemon
+
+# Seed Supabase / PostgreSQL database with initial tables and demo accounts
+npm run seed
+
+# Start backend server with auto-restart
+npm run dev
 ```
 
-The backend server will run at `http://localhost:5000`.
+The backend server runs on `http://localhost:5000`.
+
+### 2. Frontend Setup (`/frontend`)
+
+```bash
+cd frontend
+
+# Copy environment variables
+cp .env.example .env
+
+# VITE_API_BASE_URL=http://localhost:5000/api
+
+# Install dependencies
+npm install
+
+# Start Vite development server
+npm run dev
+```
+
+The frontend application runs on `http://localhost:5173`.
 
 ---
 
-## 📖 Component Highlights
+## 🔐 Credentials & Default Demo Accounts
 
-- **Frontend (`/frontend`)**: Clean dashboard with UI paths for Public Order Tracking, Business Owners, and Delivery Partners. Configured with Tailwind CSS, React Router, and Lucide React.
-- **Backend (`/backend`)**: Robust Express APIs, JWT security middleware, PostgreSQL database connectivity, and automated complaints categorization powered by the **Google Gemini AI** pilot.
+Default accounts seeded into the database:
+
+| Role | Email | Password | Access Rights |
+|---|---|---|---|
+| **Business Owner** | `owner@orderpilot.ai` | `Password123` | Full access to stats, order management, AI action approvals, and delivery partner account creation |
+| **Delivery Partner** | `partner@orderpilot.ai` | `Password123` | Assigned task tracking and status progression (`Pending` → `In Progress` → `Completed`) |
+| **Customer** | *No login required* | N/A | Public order tracking (`/track-order/ORD-1024`) and complaint submission (`/report-issue`) |
+
+---
+
+## ☁️ Deployment Environment Variables Guide
+
+### 1. Supabase (PostgreSQL Database)
+- Go to **Project Settings** > **Database** in your Supabase dashboard.
+- Copy your **Connection URI** (Connection String) under *Direct connection* or *Connection pooling*.
+
+### 2. Render (Backend Deployment)
+Deploy the `/backend` directory as a **Web Service** on Render:
+- **Build Command**: `npm install`
+- **Start Command**: `npm start`
+- **Environment Variables**:
+  - `DATABASE_URL`: Your Supabase connection string.
+  - `JWT_SECRET`: Secret key for JWT signing.
+  - `GEMINI_API_KEY`: Your Google Gemini API Key.
+  - `CLIENT_URL`: URL of your deployed Vercel frontend (e.g. `https://orderpilot.vercel.app`).
+  - `PORT`: `5000` (or set automatically by Render).
+
+### 3. Vercel (Frontend Deployment)
+Deploy the `/frontend` directory as a **Vite Application** on Vercel:
+- **Framework Preset**: Vite
+- **Root Directory**: `frontend`
+- **Build Command**: `npm run build`
+- **Output Directory**: `dist`
+- **Environment Variables**:
+  - `VITE_API_BASE_URL`: URL of your deployed Render backend API (e.g. `https://orderpilot-api.onrender.com/api`).

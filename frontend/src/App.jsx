@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import DashboardLayout from './components/DashboardLayout';
+import ProtectedRoute from './components/ProtectedRoute';
 import Landing from './pages/Landing';
 import TrackOrder from './pages/TrackOrder';
 import OrderDetails from './pages/OrderDetails';
@@ -23,16 +24,20 @@ export default function App() {
           <Route path="/report-issue" element={<ReportIssue />} />
           <Route path="/login" element={<Login />} />
 
-          {/* Owner Routes */}
-          <Route path="/owner" element={<DashboardLayout />}>
-            <Route path="dashboard" element={<OwnerDashboard />} />
-            <Route path="orders" element={<OwnerOrders />} />
-            <Route path="complaints" element={<OwnerComplaints />} />
+          {/* Protected Owner Routes */}
+          <Route element={<ProtectedRoute allowedRole="owner" />}>
+            <Route path="/owner" element={<DashboardLayout />}>
+              <Route path="dashboard" element={<OwnerDashboard />} />
+              <Route path="orders" element={<OwnerOrders />} />
+              <Route path="complaints" element={<OwnerComplaints />} />
+            </Route>
           </Route>
 
-          {/* Partner Routes */}
-          <Route path="/partner" element={<DashboardLayout />}>
-            <Route path="dashboard" element={<PartnerDashboard />} />
+          {/* Protected Partner Routes */}
+          <Route element={<ProtectedRoute allowedRole="delivery_partner" />}>
+            <Route path="/partner" element={<DashboardLayout />}>
+              <Route path="dashboard" element={<PartnerDashboard />} />
+            </Route>
           </Route>
         </Routes>
       </BrowserRouter>

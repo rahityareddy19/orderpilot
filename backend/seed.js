@@ -6,16 +6,13 @@ const path = require('path');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false }
 });
 
 async function seed() {
   console.log('Starting database seeding...');
   
   try {
-    // Read and run schema.sql
     console.log('Reading schema.sql...');
     const schemaPath = path.join(__dirname, 'schema.sql');
     const schemaSql = fs.readFileSync(schemaPath, 'utf8');
@@ -45,12 +42,11 @@ async function seed() {
     const partnerSuresh = users.find(u => u.name === 'Suresh Reddy');
     const partnerVikram = users.find(u => u.name === 'Vikram Singh');
 
-    console.log(`Users created. Ravi ID: ${partnerRavi?.id}, Suresh ID: ${partnerSuresh?.id}`);
+    console.log(`Users created. Owner & Partners (Ravi ID: ${partnerRavi?.id})`);
 
     // Insert Orders
     console.log('Inserting orders...');
     
-    // ORD-1024
     const timeline1024 = JSON.stringify([
       { time: '2026-08-03T10:30:00.000Z', event: 'Order placed', status: 'completed' },
       { time: '2026-08-03T11:00:00.000Z', event: 'Payment confirmed', status: 'completed' },
@@ -77,10 +73,10 @@ async function seed() {
     // Insert Complaints
     console.log('Inserting complaints...');
     await pool.query(`
-      INSERT INTO complaints (id, order_id, customer, issue_type, message, status, urgency, ai_summary, ai_suggestion, created_at)
+      INSERT INTO complaints (id, order_id, customer, issue_type, message, status, urgency, ai_summary, ai_suggestion, requires_approval, approved, created_at)
       VALUES 
-        ('CMP-301', 'ORD-1024', 'Priya Sharma', 'Delivery Delay', 'My order was supposed to arrive yesterday but it still hasn''t been delivered. I need it urgently for a gift.', 'open', 'high', 'Customer frustrated about missed delivery window. Order ORD-1024 had a failed attempt due to customer unavailability. Re-delivery scheduled for today.', 'Send apology with updated ETA. Offer 10% discount on next order. Prioritize re-delivery.', '2026-08-05T10:00:00Z'),
-        ('CMP-300', 'ORD-1021', 'Rajesh Iyer', 'Wrong Item', 'I received a different color than what I ordered. I ordered black but got grey.', 'in-progress', 'medium', 'Color mismatch complaint. Customer ordered black Bluetooth Speaker but received grey variant. Warehouse packing error likely.', 'Initiate return pickup and send correct item. Escalate to warehouse QC team.', '2026-08-04T15:30:00Z')
+        ('CMP-301', 'ORD-1024', 'Priya Sharma', 'Delivery Delay', 'My order was supposed to arrive yesterday but it still hasn''t been delivered. I need it urgently for a gift.', 'open', 'high', 'Customer frustrated about missed delivery window. Order ORD-1024 had a failed attempt due to customer unavailability. Re-delivery scheduled for today.', 'Send apology with updated ETA. Offer 10% discount on next order. Prioritize re-delivery.', true, false, '2026-08-05T10:00:00Z'),
+        ('CMP-300', 'ORD-1021', 'Rajesh Iyer', 'Wrong Item', 'I received a different color than what I ordered. I ordered black but got grey.', 'in-progress', 'medium', 'Color mismatch complaint. Customer ordered black Bluetooth Speaker but received grey variant. Warehouse packing error likely.', 'Initiate return pickup and send correct item. Escalate to warehouse QC team.', true, false, '2026-08-04T15:30:00Z')
     `);
 
     console.log('Complaints inserted successfully.');
@@ -96,7 +92,7 @@ async function seed() {
 
     console.log('Tasks inserted successfully.');
 
-    // Insert Notifications (Urgent Issues mapping)
+    // Insert Notifications
     console.log('Inserting notifications...');
     await pool.query(`
       INSERT INTO notifications (title, type, severity)

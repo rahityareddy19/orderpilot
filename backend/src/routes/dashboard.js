@@ -56,4 +56,20 @@ router.get('/ai-activity', authenticate, requireRole(['owner']), async (req, res
   }
 });
 
+// GET /api/dashboard/approvals (Owner only)
+router.get('/approvals', authenticate, requireRole(['owner']), async (req, res, next) => {
+  try {
+    const result = await db.query(`
+      SELECT id, order_id as "orderId", customer, issue_type as "issueType", message, urgency, ai_summary as "aiSummary", ai_suggestion as "aiSuggestion", created_at as "createdAt"
+      FROM complaints
+      WHERE requires_approval = true AND approved = false
+      ORDER BY created_at DESC
+    `);
+
+    res.json({ approvalRequests: result.rows });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

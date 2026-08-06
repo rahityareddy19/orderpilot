@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Bot,
@@ -10,40 +11,43 @@ import {
   MapPin,
   Package,
   MessageSquareWarning,
+  RefreshCw,
 } from 'lucide-react';
-import { orders } from '../data/mockData';
+import api from '../api';
 import StatusBadge from '../components/StatusBadge';
 import Button from '../components/Button';
 
 export default function OrderDetails() {
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const order = orders.find((o) => o.id === orderId);
 
-  if (!order || !order.timeline) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
-        <nav className="border-b border-slate-200 bg-white">
-          <div className="max-w-6xl mx-auto px-6 h-16 flex items-center">
-            <Link to="/track-order" className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1.5">
-              <ArrowLeft className="w-4 h-4" />
-              Back to tracking
-            </Link>
-          </div>
-        </nav>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <Package className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <h2 className="text-lg font-semibold text-slate-900">Order not found</h2>
-            <p className="text-sm text-slate-500 mt-1">We couldn't find order {orderId}</p>
-            <Link to="/track-order" className="mt-4 inline-block">
-              <Button variant="secondary" size="sm">Try again</Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchOrder = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get(`/orders/${orderId}`);
+      if (res.data?.order) {
+        setOrder(res.data.order);
+      } else {
+        setError('Order not found');
+      }
+    } catch (err) {
+      console.error('Error fetching order:', err);
+      setError(err.response?.data?.error || `Could not find order ${orderId}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (orderId) {
+      fetchOrder();
+    }
+  }, [orderId]);
 
   const getTimelineIcon = (status) => {
     switch (status) {
@@ -70,6 +74,61 @@ export default function OrderDetails() {
     });
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col">
+        <nav className="border-b border-slate-200 bg-white">
+          <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                <Bot className="w-4.5 h-4.5 text-white" />
+              </div>
+              <span className="text-sm font-bold text-slate-900">OrderPilot</span>
+              <span className="text-sm font-bold text-indigo-600">AI</span>
+            </Link>
+          </div>
+        </nav>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mx-auto mb-3" />
+            <p className="text-sm text-slate-500 font-medium">Fetching order status...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col">
+        <nav className="border-b border-slate-200 bg-white">
+          <div className="max-w-6xl mx-auto px-6 h-16 flex items-center">
+            <Link to="/track-order" className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1.5">
+              <ArrowLeft className="w-4 h-4" />
+              Back to tracking
+            </Link>
+          </div>
+        </nav>
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="text-center max-w-sm">
+            <Package className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+            <h2 className="text-lg font-semibold text-slate-900">Order not found</h2>
+            <p className="text-sm text-slate-500 mt-1">{error || `We couldn't find order ${orderId}`}</p>
+            <div className="mt-5 flex items-center justify-center gap-3">
+              <Link to="/track-order">
+                <Button variant="secondary" size="sm">Try another ID</Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const itemsList = Array.isArray(order.items) ? order.items : [];
+  const timelineEvents = Array.isArray(order.timeline) ? order.timeline : [];
+  const customerUpdateMsg = order.customerUpdate || order.customer_update;
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Nav */}
@@ -82,10 +141,18 @@ export default function OrderDetails() {
             <span className="text-sm font-bold text-slate-900">OrderPilot</span>
             <span className="text-sm font-bold text-indigo-600">AI</span>
           </Link>
-          <Link to="/track-order" className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1.5">
-            <ArrowLeft className="w-4 h-4" />
-            Track another order
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={fetchOrder}
+              className="text-xs text-slate-500 hover:text-indigo-600 flex items-center gap-1 border border-slate-200 rounded-lg px-2.5 py-1.5 transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" /> Refresh
+            </button>
+            <Link to="/track-order" className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1.5">
+              <ArrowLeft className="w-4 h-4" />
+              Track another order
+            </Link>
+          </div>
         </div>
       </nav>
 
@@ -100,16 +167,16 @@ export default function OrderDetails() {
                   <h1 className="text-xl font-semibold text-slate-900">{order.id}</h1>
                   <StatusBadge status={order.status} size="md" />
                 </div>
-                <p className="text-sm text-slate-500">{order.items.join(', ')}</p>
+                <p className="text-sm text-slate-500">{itemsList.join(', ')}</p>
               </div>
               <div className="text-right text-sm">
                 <p className="text-slate-500">Estimated Delivery</p>
                 <p className="font-medium text-slate-900">
-                  {new Date(order.estimatedDelivery).toLocaleDateString('en-IN', {
+                  {order.estimatedDelivery ? new Date(order.estimatedDelivery).toLocaleDateString('en-IN', {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric',
-                  })}
+                  }) : 'Pending update'}
                 </p>
               </div>
             </div>
@@ -121,7 +188,7 @@ export default function OrderDetails() {
               </div>
               <div>
                 <p className="text-slate-500">Delivery Partner</p>
-                <p className="font-medium text-slate-900">{order.partner || '—'}</p>
+                <p className="font-medium text-slate-900">{order.partner || order.partner_name || '—'}</p>
               </div>
               <div className="col-span-2">
                 <p className="text-slate-500 flex items-center gap-1">
@@ -132,14 +199,14 @@ export default function OrderDetails() {
             </div>
           </div>
 
-          {/* Customer Update */}
-          {order.customerUpdate && (
+          {/* Customer / AI Update Alert */}
+          {customerUpdateMsg && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
                 <div>
-                  <h3 className="text-sm font-semibold text-amber-900 mb-1">Delivery Update</h3>
-                  <p className="text-sm text-amber-800 leading-relaxed">{order.customerUpdate}</p>
+                  <h3 className="text-sm font-semibold text-amber-900 mb-1">AI & Delivery Update</h3>
+                  <p className="text-sm text-amber-800 leading-relaxed">{customerUpdateMsg}</p>
                 </div>
               </div>
             </div>
@@ -152,11 +219,11 @@ export default function OrderDetails() {
               Delivery Timeline
             </h2>
             <div className="space-y-0">
-              {order.timeline.map((step, i) => (
+              {timelineEvents.map((step, i) => (
                 <div key={i} className="flex gap-4">
                   <div className="flex flex-col items-center">
                     {getTimelineIcon(step.status)}
-                    {i < order.timeline.length - 1 && (
+                    {i < timelineEvents.length - 1 && (
                       <div className={`w-px flex-1 my-1 ${
                         step.status === 'completed' ? 'bg-emerald-200' : 'bg-slate-200'
                       }`} />
@@ -174,6 +241,10 @@ export default function OrderDetails() {
                   </div>
                 </div>
               ))}
+
+              {timelineEvents.length === 0 && (
+                <p className="text-sm text-slate-500">No timeline events recorded yet.</p>
+              )}
             </div>
           </div>
 
@@ -181,7 +252,7 @@ export default function OrderDetails() {
           <div className="bg-white rounded-xl border border-slate-200 p-6 flex items-center justify-between flex-wrap gap-4">
             <div>
               <h3 className="text-sm font-semibold text-slate-900">Having an issue?</h3>
-              <p className="text-sm text-slate-500">Report a problem with this order and our team will look into it.</p>
+              <p className="text-sm text-slate-500">Report a problem with this order and our AI pilot will analyze it immediately.</p>
             </div>
             <Button
               variant="secondary"

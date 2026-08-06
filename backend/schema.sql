@@ -46,6 +46,8 @@ CREATE TABLE complaints (
   urgency VARCHAR(50) NOT NULL DEFAULT 'medium' CHECK (urgency IN ('low', 'medium', 'high')),
   ai_summary TEXT,
   ai_suggestion TEXT,
+  requires_approval BOOLEAN DEFAULT true,
+  approved BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 

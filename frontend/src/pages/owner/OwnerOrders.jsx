@@ -1,13 +1,88 @@
-import { useState, useMemo } from 'react';
-import { Search } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Search, Plus, Loader2, RefreshCw, X, CheckCircle2, AlertCircle } from 'lucide-react';
+import api from '../../api';
+import { useApp } from '../../context/AppContext';
 import Header from '../../components/Header';
 import StatusBadge from '../../components/StatusBadge';
 import PriorityBadge from '../../components/PriorityBadge';
-import { orders } from '../../data/mockData';
+import Button from '../../components/Button';
+import Input from '../../components/Input';
 
 export default function OwnerOrders() {
+  const { fetchPartners } = useApp();
+  const [orders, setOrders] = useState([]);
+  const [partners, setPartners] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  // Modal State for New Order
+  const [showModal, setShowModal] = useState(false);
+  const [newOrder, setNewOrder] = useState({
+    id: '',
+    customer: '',
+    address: '',
+    items: '',
+    amount: '',
+    priority: 'normal',
+    partnerId: ''
+  });
+  const [creating, setCreating] = useState(false);
+  const [modalError, setModalError] = useState('');
+
+  const loadOrdersAndPartners = async () => {
+    setLoading(true);
+    try {
+      const [ordersRes, partnersList] = await Promise.all([
+        api.get('/orders'),
+        fetchPartners()
+      ]);
+      setOrders(ordersRes.data?.orders || []);
+      setPartners(partnersList || []);
+    } catch (err) {
+      console.error('Error loading orders:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadOrdersAndPartners();
+  }, []);
+
+  const handleCreateOrder = async (e) => {
+    e.preventDefault();
+    if (!newOrder.customer || !newOrder.address || !newOrder.items || !newOrder.amount) {
+      setModalError('Please fill in all required fields.');
+      return;
+    }
+
+    setModalError('');
+    setCreating(true);
+
+    try {
+      const payload = {
+        id: newOrder.id ? newOrder.id.trim().toUpperCase() : undefined,
+        customer: newOrder.customer.trim(),
+        address: newOrder.address.trim(),
+        items: newOrder.items.split(',').map(s => s.trim()).filter(Boolean),
+        amount: parseFloat(newOrder.amount),
+        priority: newOrder.priority,
+        partner_id: newOrder.partnerId ? parseInt(newOrder.partnerId, 10) : null
+      };
+
+      const res = await api.post('/orders', payload);
+      if (res.data?.order) {
+        setOrders([res.data.order, ...orders]);
+        setShowModal(false);
+        setNewOrder({ id: '', customer: '', address: '', items: '', amount: '', priority: 'normal', partnerId: '' });
+      }
+    } catch (err) {
+      setModalError(err.response?.data?.error || 'Failed to create order.');
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     return orders.filter((order) => {
@@ -19,20 +94,38 @@ export default function OwnerOrders() {
         statusFilter === 'all' || order.status === statusFilter;
       return matchesQuery && matchesStatus;
     });
-  }, [query, statusFilter]);
+  }, [orders, query, statusFilter]);
 
   const statuses = ['all', 'processing', 'in-transit', 'delayed', 'delivered', 'cancelled'];
 
-  const formatDate = (dateStr) =>
-    new Date(dateStr).toLocaleDateString('en-IN', {
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleDateString('en-IN', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
     });
+  };
 
   return (
     <div>
-      <Header title="Orders" description="View and search all orders" />
+      <Header
+        title="Orders"
+        description="View, search, and manage all delivery orders"
+        actions={
+          <div className="flex items-center gap-2">
+            <button
+              onClick={loadOrdersAndPartners}
+              className="text-xs font-medium text-slate-600 hover:text-indigo-600 flex items-center gap-1.5 border border-slate-200 rounded-lg px-3 py-2 bg-white transition-colors"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
+            </button>
+            <Button icon={Plus} size="sm" onClick={() => setShowModal(true)}>
+              Add Order
+            </Button>
+          </div>
+        }
+      />
 
       <div className="p-6">
         {/* Filters */}
@@ -95,43 +188,54 @@ export default function OwnerOrders() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filtered.map((order) => (
-                  <tr
-                    key={order.id}
-                    className="hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="px-5 py-3.5 font-medium text-slate-900">
-                      {order.id}
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-600">
-                      {order.customer}
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-500 max-w-[200px] truncate">
-                      {order.items.join(', ')}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <StatusBadge status={order.status} />
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <PriorityBadge priority={order.priority} />
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-600">
-                      {order.partner || '—'}
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-500 whitespace-nowrap">
-                      {formatDate(order.placedAt)}
-                    </td>
-                    <td className="px-5 py-3.5 text-right text-slate-900 font-medium">
-                      ₹{order.amount.toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map((order) => {
+                  const itemsList = Array.isArray(order.items) ? order.items : [];
+                  return (
+                    <tr
+                      key={order.id}
+                      className="hover:bg-slate-50 transition-colors"
+                    >
+                      <td className="px-5 py-3.5 font-medium text-slate-900">
+                        {order.id}
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-600">
+                        {order.customer}
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-500 max-w-[200px] truncate">
+                        {itemsList.join(', ')}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <StatusBadge status={order.status} />
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <PriorityBadge priority={order.priority} />
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-600">
+                        {order.partner || order.partner_name || '—'}
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-500 whitespace-nowrap">
+                        {formatDate(order.placedAt || order.placed_at)}
+                      </td>
+                      <td className="px-5 py-3.5 text-right text-slate-900 font-medium">
+                        ₹{(order.amount || 0).toLocaleString()}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-          {filtered.length === 0 && (
+
+          {filtered.length === 0 && !loading && (
             <div className="py-12 text-center">
               <p className="text-sm text-slate-500">No orders match your search.</p>
+            </div>
+          )}
+
+          {loading && (
+            <div className="py-12 text-center">
+              <Loader2 className="w-6 h-6 text-indigo-600 animate-spin mx-auto mb-2" />
+              <p className="text-xs text-slate-400">Loading orders...</p>
             </div>
           )}
         </div>
@@ -140,6 +244,110 @@ export default function OwnerOrders() {
           Showing {filtered.length} of {orders.length} orders
         </p>
       </div>
+
+      {/* Add Order Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl border border-slate-200 max-w-md w-full p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+              <h2 className="text-base font-bold text-slate-900">Create New Order</h2>
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {modalError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                <span>{modalError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateOrder} className="space-y-3.5">
+              <Input
+                label="Order ID (Optional, e.g. ORD-1025)"
+                placeholder="Leave blank to auto-generate"
+                value={newOrder.id}
+                onChange={(e) => setNewOrder({ ...newOrder, id: e.target.value })}
+              />
+
+              <Input
+                label="Customer Name *"
+                placeholder="e.g. Rahul Sharma"
+                value={newOrder.customer}
+                onChange={(e) => setNewOrder({ ...newOrder, customer: e.target.value })}
+                required
+              />
+
+              <Input
+                label="Delivery Address *"
+                placeholder="e.g. 12, Indiranagar 100ft Road, Bangalore"
+                value={newOrder.address}
+                onChange={(e) => setNewOrder({ ...newOrder, address: e.target.value })}
+                required
+              />
+
+              <Input
+                label="Items (Comma separated) *"
+                placeholder="e.g. Wireless Headset, Mouse Pad"
+                value={newOrder.items}
+                onChange={(e) => setNewOrder({ ...newOrder, items: e.target.value })}
+                required
+              />
+
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="Amount (₹) *"
+                  type="number"
+                  placeholder="e.g. 1499"
+                  value={newOrder.amount}
+                  onChange={(e) => setNewOrder({ ...newOrder, amount: e.target.value })}
+                  required
+                />
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Priority</label>
+                  <select
+                    value={newOrder.priority}
+                    onChange={(e) => setNewOrder({ ...newOrder, priority: e.target.value })}
+                    className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm bg-white"
+                  >
+                    <option value="normal">Normal</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                    <option value="low">Low</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Assign Delivery Partner</label>
+                <select
+                  value={newOrder.partnerId}
+                  onChange={(e) => setNewOrder({ ...newOrder, partnerId: e.target.value })}
+                  className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm bg-white"
+                >
+                  <option value="">Unassigned</option>
+                  {partners.map((p) => (
+                    <option key={p.id || p.userId} value={p.id || p.userId}>
+                      {p.name} ({p.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2">
+                <Button variant="secondary" size="sm" type="button" onClick={() => setShowModal(false)}>
+                  Cancel
+                </Button>
+                <Button size="sm" type="submit" disabled={creating}>
+                  {creating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle2 className="w-4 h-4 mr-1" />} Save Order
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

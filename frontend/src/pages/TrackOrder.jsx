@@ -13,11 +13,7 @@ export default function TrackOrder() {
     e.preventDefault();
     const trimmed = orderId.trim().toUpperCase();
     if (!trimmed) {
-      setError('Please enter an order ID');
-      return;
-    }
-    if (trimmed !== 'ORD-1024') {
-      setError('Order not found. Try demo ID: ORD-1024');
+      setError('Please enter an order ID (e.g. ORD-1024)');
       return;
     }
     setError('');
@@ -74,7 +70,7 @@ export default function TrackOrder() {
           </form>
 
           <p className="mt-6 text-center text-xs text-slate-400">
-            Demo order ID: <span className="font-mono text-slate-600">ORD-1024</span>
+            Demo order ID suggestion: <span className="font-mono text-slate-600">ORD-1024</span>
           </p>
         </div>
       </div>
