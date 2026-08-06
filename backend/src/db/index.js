@@ -408,6 +408,30 @@ async function executeQuery(text, params = []) {
   const lowerSql = sql.toLowerCase();
 
   if (lowerSql.startsWith('select')) {
+    
+    // --- Dashboard Metrics: Handle COUNT(*) Aggregate Queries ---
+    if (lowerSql.includes('count(*)')) {
+      if (lowerSql.includes('from orders')) {
+        if (lowerSql.includes("status = 'delayed'")) {
+          const count = mockDb.orders.filter(o => o.status === 'delayed').length;
+          return { rows: [{ count: String(count) }], rowCount: 1 };
+        }
+        return { rows: [{ count: String(mockDb.orders.length) }], rowCount: 1 };
+      }
+      if (lowerSql.includes('from complaints')) {
+        if (lowerSql.includes("status = 'open'")) {
+          const count = mockDb.complaints.filter(c => c.status === 'open' || c.status === 'open').length;
+          return { rows: [{ count: String(count) }], rowCount: 1 };
+        }
+        return { rows: [{ count: String(mockDb.complaints.length) }], rowCount: 1 };
+      }
+      if (lowerSql.includes('from activity_logs')) {
+        return { rows: [{ count: String(mockDb.activity_logs.length) }], rowCount: 1 };
+      }
+      return { rows: [{ count: '0' }], rowCount: 1 };
+    }
+
+    // --- Standard SELECT Queries ---
     if (lowerSql.includes('from users')) {
       if (lowerSql.includes('where email =')) {
         const emailParam = params[0]?.toLowerCase();
@@ -448,7 +472,7 @@ async function executeQuery(text, params = []) {
     }
 
     if (lowerSql.includes('from complaints')) {
-      if (lowerSql.includes('where id = $1')) {
+      if (lowerSql.includes('where id = $1') || lowerSql.includes('where c.id = $1')) {
         const idParam = params[0];
         const found = mockDb.complaints.filter(c => c.id === idParam);
         return { rows: found, rowCount: found.length };
@@ -484,10 +508,6 @@ async function executeQuery(text, params = []) {
 
     if (lowerSql.includes('from ai_decisions')) {
       return { rows: mockDb.ai_decisions, rowCount: mockDb.ai_decisions.length };
-    }
-
-    if (lowerSql.includes('count(*)')) {
-      return { rows: [{ count: String(mockDb.orders.length) }], rowCount: 1 };
     }
   }
 

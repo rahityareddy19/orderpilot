@@ -9,7 +9,7 @@ router.get('/stats', authenticate, requireRole(['owner']), async (req, res, next
     const totalOrdersRes = await db.query('SELECT COUNT(*) FROM orders');
     const delayedOrdersRes = await db.query("SELECT COUNT(*) FROM orders WHERE status = 'delayed'");
     const openComplaintsRes = await db.query("SELECT COUNT(*) FROM complaints WHERE status = 'open'");
-    const aiActionsRes = await db.query('SELECT COUNT(*) FROM ai_activity_logs');
+    const aiActionsRes = await db.query('SELECT COUNT(*) FROM activity_logs');
 
     res.json({
       stats: {
@@ -45,7 +45,7 @@ router.get('/ai-activity', authenticate, requireRole(['owner']), async (req, res
   try {
     const result = await db.query(`
       SELECT id, action, type, timestamp, related_to as "relatedTo"
-      FROM ai_activity_logs 
+      FROM activity_logs 
       ORDER BY timestamp DESC 
       LIMIT 15
     `);
