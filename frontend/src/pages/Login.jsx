@@ -177,8 +177,12 @@ export default function Login() {
 
           <p className="mt-6 text-center text-sm text-slate-500">
             Customer without an account?{' '}
+            <Link to="/register" className="text-indigo-600 hover:text-indigo-700 font-medium">
+              Create an account
+            </Link>
+            {' '}or{' '}
             <Link to="/track-order" className="text-indigo-600 hover:text-indigo-700 font-medium">
-              Track your order here
+              Track your order
             </Link>
           </p>
         </div>

@@ -653,11 +653,41 @@ async function executeQuery(text, params = []) {
 
   if (lowerSql.startsWith('update orders')) {
     const id = params[params.length - 1];
-    const found = mockDb.orders.find(o => o.id === id);
+    const found = mockDb.orders.find(o => o.id === id || o.order_number === id);
     if (found) {
-      found.status = params[0];
+      if (lowerSql.includes('customer = $1')) {
+        // Edit order query
+        found.customer = params[0];
+        found.address = params[1];
+        found.items = typeof params[2] === 'string' ? JSON.parse(params[2]) : params[2];
+        found.priority = params[3];
+        found.amount = params[4];
+        found.partner_id = params[5];
+        found.delivery_partner_id = params[5];
+      } else if (lowerSql.includes('partner_id = $1')) {
+        // Auto assign query
+        found.partner_id = params[0];
+        found.delivery_partner_id = params[0];
+      } else {
+        // Status update query
+        found.status = params[0];
+      }
     }
     return { rows: found ? [found] : [], rowCount: found ? 1 : 0 };
+  }
+
+  if (lowerSql.startsWith('delete from tasks')) {
+    const id = params[0];
+    const beforeCount = mockDb.tasks.length;
+    mockDb.tasks = mockDb.tasks.filter(t => t.order_id !== id && t.id !== id);
+    return { rows: [], rowCount: beforeCount - mockDb.tasks.length };
+  }
+
+  if (lowerSql.startsWith('delete from orders')) {
+    const id = params[0];
+    const beforeCount = mockDb.orders.length;
+    mockDb.orders = mockDb.orders.filter(o => o.id !== id && o.order_number !== id);
+    return { rows: [], rowCount: beforeCount - mockDb.orders.length };
   }
 
   return { rows: [], rowCount: 0 };

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Search, Plus, Loader2, RefreshCw, X, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Search, Plus, Loader2, RefreshCw, X, CheckCircle2, AlertCircle, Edit2, Trash2 } from 'lucide-react';
 import api from '../../api';
 import { useApp } from '../../context/AppContext';
 import Header from '../../components/Header';
@@ -15,6 +15,7 @@ export default function OwnerOrders() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Modal State for New Order
   const [showModal, setShowModal] = useState(false);
@@ -29,6 +30,7 @@ export default function OwnerOrders() {
   });
   const [creating, setCreating] = useState(false);
   const [modalError, setModalError] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
 
   const loadOrdersAndPartners = async () => {
     setLoading(true);
@@ -71,16 +73,56 @@ export default function OwnerOrders() {
         partner_id: newOrder.partnerId ? parseInt(newOrder.partnerId, 10) : null
       };
 
-      const res = await api.post('/orders', payload);
-      if (res.data?.order) {
-        setOrders([res.data.order, ...orders]);
-        setShowModal(false);
-        setNewOrder({ id: '', customer: '', address: '', items: '', amount: '', priority: 'normal', partnerId: '' });
+      if (isEditing) {
+        const res = await api.put(`/orders/${payload.id}`, payload);
+        if (res.data?.order) {
+          setOrders(orders.map(o => o.id === res.data.order.id ? res.data.order : o));
+          setShowModal(false);
+          setNewOrder({ id: '', customer: '', address: '', items: '', amount: '', priority: 'normal', partnerId: '' });
+          setIsEditing(false);
+          setSuccessMessage('Order updated successfully!');
+          setTimeout(() => setSuccessMessage(''), 5000);
+        }
+      } else {
+        const res = await api.post('/orders', payload);
+        if (res.data?.order) {
+          setOrders([res.data.order, ...orders]);
+          setShowModal(false);
+          setNewOrder({ id: '', customer: '', address: '', items: '', amount: '', priority: 'normal', partnerId: '' });
+          setSuccessMessage('Order created successfully! The AI assignment workflow has been triggered.');
+          setTimeout(() => setSuccessMessage(''), 5000);
+        }
       }
     } catch (err) {
-      setModalError(err.response?.data?.error || 'Failed to create order.');
+      setModalError(err.response?.data?.error || `Failed to ${isEditing ? 'update' : 'create'} order.`);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleEditClick = (order) => {
+    setNewOrder({
+      id: order.id,
+      customer: order.customer,
+      address: order.address || '',
+      items: Array.isArray(order.items) ? order.items.join(', ') : order.items,
+      amount: order.amount,
+      priority: order.priority || 'normal',
+      partnerId: order.partner_id || order.delivery_partner_id || ''
+    });
+    setIsEditing(true);
+    setShowModal(true);
+  };
+
+  const handleDeleteClick = async (orderId) => {
+    if (!window.confirm('Are you sure you want to delete this order?')) return;
+    try {
+      await api.delete(`/orders/${orderId}`);
+      setOrders(orders.filter(o => o.id !== orderId));
+      setSuccessMessage('Order deleted successfully!');
+      setTimeout(() => setSuccessMessage(''), 5000);
+    } catch (err) {
+      console.error('Delete error:', err);
     }
   };
 
@@ -120,7 +162,7 @@ export default function OwnerOrders() {
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
             </button>
-            <Button icon={Plus} size="sm" onClick={() => setShowModal(true)}>
+            <Button icon={Plus} size="sm" onClick={() => { setIsEditing(false); setNewOrder({ id: '', customer: '', address: '', items: '', amount: '', priority: 'normal', partnerId: '' }); setShowModal(true); }}>
               Add Order
             </Button>
           </div>
@@ -128,6 +170,18 @@ export default function OwnerOrders() {
       />
 
       <div className="p-6">
+        {successMessage && (
+          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-3 text-emerald-800">
+              <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+              <span className="text-sm font-medium">{successMessage}</span>
+            </div>
+            <button onClick={() => setSuccessMessage('')} className="text-emerald-500 hover:text-emerald-700">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="bg-white rounded-xl border border-slate-200 mb-6">
           <div className="p-4 flex flex-col sm:flex-row gap-3">
@@ -185,6 +239,9 @@ export default function OwnerOrders() {
                   <th className="text-right px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">
                     Amount
                   </th>
+                  <th className="text-right px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -219,6 +276,14 @@ export default function OwnerOrders() {
                       <td className="px-5 py-3.5 text-right text-slate-900 font-medium">
                         ₹{(order.amount || 0).toLocaleString()}
                       </td>
+                      <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                        <button onClick={() => handleEditClick(order)} className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors" title="Edit Order">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDeleteClick(order.id)} className="p-1.5 text-slate-400 hover:text-red-600 transition-colors ml-1" title="Delete Order">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -250,7 +315,7 @@ export default function OwnerOrders() {
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-xl border border-slate-200 max-w-md w-full p-6 shadow-xl">
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-              <h2 className="text-base font-bold text-slate-900">Create New Order</h2>
+              <h2 className="text-base font-bold text-slate-900">{isEditing ? 'Edit Order' : 'Create New Order'}</h2>
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
               </button>
@@ -269,6 +334,7 @@ export default function OwnerOrders() {
                 placeholder="Leave blank to auto-generate"
                 value={newOrder.id}
                 onChange={(e) => setNewOrder({ ...newOrder, id: e.target.value })}
+                disabled={isEditing}
               />
 
               <Input
@@ -341,7 +407,7 @@ export default function OwnerOrders() {
                   Cancel
                 </Button>
                 <Button size="sm" type="submit" disabled={creating}>
-                  {creating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle2 className="w-4 h-4 mr-1" />} Save Order
+                  {creating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle2 className="w-4 h-4 mr-1" />} {isEditing ? 'Save Changes' : 'Save Order'}
                 </Button>
               </div>
             </form>

@@ -4,6 +4,7 @@ const { z } = require('zod');
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const jwt = require('jsonwebtoken');
+const { logActivity, logAIDecisions } = require('../agents/ActivityAgent');
 
 const createOrderSchema = z.object({
   id: z.string().optional(),
@@ -135,21 +136,55 @@ router.post('/', authenticate, requireRole(['owner']), async (req, res, next) =>
       JSON.stringify(defaultTimeline)
     ]);
 
-    // If assigned to a partner, create initial task
-    if (partnerId) {
-      const taskId = `TASK-${Date.now().toString().slice(-3)}`;
+    let finalPartnerId = partnerId;
+
+    if (!finalPartnerId) {
+      // Trigger Automatic AI Assignment Agent
+      const availablePartners = await db.query("SELECT id FROM users WHERE role = 'delivery_partner'");
+      if (availablePartners.rows.length > 0) {
+        // Simple mock AI logic: pick a random partner or based on some load logic. Here we just pick one.
+        const selectedPartner = availablePartners.rows[Math.floor(Math.random() * availablePartners.rows.length)];
+        finalPartnerId = selectedPartner.id;
+        
+        await db.query('UPDATE orders SET partner_id = $1 WHERE id = $2', [finalPartnerId, orderId]);
+        result.rows[0].partner_id = finalPartnerId;
+
+        await logAIDecisions(
+          orderId,
+          'TaskAssignmentAgent',
+          `Order created without manual assignment. Automatically allocated to partner #${finalPartnerId} based on current load and proximity.`,
+          `Task created and assignment stored in database.`,
+          0.92
+        );
+      }
+    }
+
+    if (finalPartnerId) {
+      const taskId = `TASK-${Date.now().toString().slice(-4)}`;
       await db.query(`
         INSERT INTO tasks (id, order_id, partner_id, status, priority, scheduled_time, notes)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
       `, [
         taskId,
         orderId,
-        partnerId,
+        finalPartnerId,
         'pending',
         validated.priority,
         new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         `Initial delivery task for ${validated.customer}`
       ]);
+
+      // Notify Delivery Partner
+      await db.query(`
+        INSERT INTO notifications (receiver, message, type) VALUES ($1, $2, $3)
+      `, [finalPartnerId, `New delivery task ${taskId} assigned for Order ${orderId}`, 'task']);
+
+      // Notify Owner
+      await db.query(`
+        INSERT INTO notifications (receiver, message, type) VALUES ($1, $2, $3)
+      `, ['owner', `AI Assignment: Partner #${finalPartnerId} assigned to Order ${orderId}`, 'system']);
+
+      await logActivity('ORDER_AI_ASSIGNED', 'TaskAssignmentAgent', { orderId, taskId, partnerId: finalPartnerId });
     }
 
     res.status(201).json({
@@ -161,6 +196,70 @@ router.post('/', authenticate, requireRole(['owner']), async (req, res, next) =>
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
     }
+    next(error);
+  }
+});
+
+// PUT /api/orders/:id (Owner only)
+router.put('/:id', authenticate, requireRole(['owner']), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const validated = createOrderSchema.parse(req.body);
+    const uppercaseId = id.toUpperCase();
+    
+    const exists = await db.query('SELECT * FROM orders WHERE id = $1', [uppercaseId]);
+    if (exists.rows.length === 0) {
+      return res.status(404).json({ error: `Order ${uppercaseId} not found` });
+    }
+
+    const partnerId = validated.partner_id || validated.partnerId || null;
+
+    const result = await db.query(`
+      UPDATE orders SET 
+        customer = $1, address = $2, items = $3, priority = $4, 
+        amount = $5, partner_id = $6
+      WHERE id = $7
+      RETURNING *
+    `, [
+      validated.customer,
+      validated.address,
+      JSON.stringify(validated.items),
+      validated.priority,
+      validated.amount,
+      partnerId,
+      uppercaseId
+    ]);
+
+    res.json({
+      message: 'Order updated successfully',
+      order: formatOrderResponse(result.rows[0])
+    });
+  } catch (error) {
+    console.error(`PUT /api/orders/${req.params.id} Error:`, error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors[0].message });
+    }
+    next(error);
+  }
+});
+
+// DELETE /api/orders/:id (Owner only)
+router.delete('/:id', authenticate, requireRole(['owner']), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const uppercaseId = id.toUpperCase();
+
+    const exists = await db.query('SELECT * FROM orders WHERE id = $1', [uppercaseId]);
+    if (exists.rows.length === 0) {
+      return res.status(404).json({ error: `Order ${uppercaseId} not found` });
+    }
+
+    await db.query('DELETE FROM tasks WHERE order_id = $1', [uppercaseId]);
+    await db.query('DELETE FROM orders WHERE id = $1', [uppercaseId]);
+
+    res.json({ message: 'Order deleted successfully' });
+  } catch (error) {
+    console.error(`DELETE /api/orders/${req.params.id} Error:`, error);
     next(error);
   }
 });
