@@ -45,6 +45,12 @@ const getMockResponse = (config) => {
   if (url.endsWith('/tasks') || url.includes('/tasks/my-tasks') || url.includes('/dashboard/partner-tasks')) return Promise.resolve({ data: { tasks: partnerTasks } });
   
   // General Data routes
+  if (url.includes('/orders/')) {
+    const id = url.split('/orders/')[1];
+    const found = orders.find(o => o.id === id || o.order_number === id);
+    if (found) return Promise.resolve({ data: { order: found } });
+    return Promise.reject({ response: { status: 404, data: { error: 'Order not found' } } });
+  }
   if (url.includes('/orders')) return Promise.resolve({ data: { orders } });
   if (url.includes('/complaints')) return Promise.resolve({ data: { complaints } });
   if (url.includes('/activity-logs')) return Promise.resolve({ data: { logs: aiActions } });
