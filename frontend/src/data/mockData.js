@@ -129,6 +129,7 @@ export const complaints = [
     urgency: 'high',
     aiSummary: 'Customer frustrated about missed delivery window. Order ORD-1024 had a failed attempt due to customer unavailability. Re-delivery scheduled for today.',
     aiSuggestion: 'Send apology with updated ETA. Offer 10% discount on next order. Prioritize re-delivery.',
+    customerResponse: 'We sincerely apologize for the missed delivery window yesterday. Our AI systems have prioritized your order, and our delivery partner is on the way to deliver your gift today before 6 PM!',
     createdAt: '2026-08-05T10:00:00',
   },
   {
@@ -141,6 +142,7 @@ export const complaints = [
     urgency: 'medium',
     aiSummary: 'Color mismatch complaint. Customer ordered black Bluetooth Speaker but received grey variant. Warehouse packing error likely.',
     aiSuggestion: 'Initiate return pickup and send correct item. Escalate to warehouse QC team.',
+    customerResponse: 'We are so sorry for the mix-up! We noticed you received the grey speaker instead of black. We have already dispatched the correct black speaker via priority shipping, and our partner will collect the incorrect item when delivering the new one.',
     createdAt: '2026-08-04T15:30:00',
   },
   {
@@ -153,6 +155,7 @@ export const complaints = [
     urgency: 'low',
     aiSummary: 'Product defect — torn zipper on backpack. Not a shipping damage issue, likely manufacturing defect.',
     aiSuggestion: 'Process replacement from inventory. Flag product batch for quality review.',
+    customerResponse: 'We apologize that your backpack arrived defective. This does not meet our quality standards! A brand-new replacement is currently in production and will be shipped to you at zero cost by tomorrow.',
     createdAt: '2026-08-03T09:00:00',
   },
   {
@@ -165,6 +168,7 @@ export const complaints = [
     urgency: 'high',
     aiSummary: 'Smartwatch order stuck in transit. No scan updates in 48 hours. Possible logistics bottleneck.',
     aiSuggestion: 'Contact logistics partner for status update. Provide customer with real-time tracking link.',
+    customerResponse: 'We understand your concern regarding the tracking updates. Our AI has investigated the logistics delay, and your smartwatch is currently moving through our central hub. It is safely on the way and will reach you within 24 hours!',
     createdAt: '2026-08-05T08:45:00',
   },
 ];

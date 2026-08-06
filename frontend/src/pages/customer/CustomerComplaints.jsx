@@ -57,12 +57,12 @@ export default function CustomerComplaints() {
 
             <p className="text-xs text-slate-700 font-medium">"{c.message || c.complaint_text}"</p>
 
-            {c.aiSummary && (
+            {(c.customerResponse || c.aiSummary) && (
               <div className="p-3.5 bg-indigo-50/70 border border-indigo-100 rounded-lg">
                 <p className="text-[11px] font-semibold text-indigo-700 uppercase tracking-wider mb-1 flex items-center gap-1">
                   <Bot className="w-3.5 h-3.5" /> AI Resolution Update
                 </p>
-                <p className="text-xs text-slate-700 leading-relaxed">{c.aiSummary || c.ai_summary}</p>
+                <p className="text-xs text-slate-700 leading-relaxed">{c.customerResponse || c.aiSummary || c.ai_summary}</p>
               </div>
             )}
           </div>
