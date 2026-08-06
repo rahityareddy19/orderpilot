@@ -29,10 +29,13 @@ export default function Login() {
     setSubmitting(false);
 
     if (result.success) {
-      if (result.user.role === 'owner') {
+      const userRole = result.user?.role;
+      if (userRole === 'owner') {
         navigate('/owner/dashboard');
-      } else {
+      } else if (userRole === 'delivery_partner') {
         navigate('/partner/dashboard');
+      } else {
+        navigate('/customer/dashboard');
       }
     } else {
       setError(result.error || 'Invalid credentials. Please try again.');
@@ -73,7 +76,7 @@ export default function Login() {
             </div>
             <h1 className="text-2xl font-bold text-slate-900">Sign in to OrderPilot AI</h1>
             <p className="mt-2 text-sm text-slate-500">
-              Access your business dashboard or delivery tasks.
+              Access your business dashboard, customer portal, or delivery tasks.
             </p>
           </div>
 
@@ -129,20 +132,27 @@ export default function Login() {
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
               Quick Demo Login Accounts
             </p>
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-2 flex-wrap">
               <button
                 type="button"
                 onClick={() => fillDemoAccount('owner@orderpilot.ai', 'Password123')}
-                className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-medium transition-colors"
+                className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-medium transition-colors"
               >
-                Fill Owner Demo
+                Owner Demo
               </button>
               <button
                 type="button"
                 onClick={() => fillDemoAccount('partner@orderpilot.ai', 'Password123')}
-                className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-medium transition-colors"
+                className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-medium transition-colors"
               >
-                Fill Partner Demo
+                Partner Demo
+              </button>
+              <button
+                type="button"
+                onClick={() => fillDemoAccount('customer@orderpilot.ai', 'Password123')}
+                className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-medium transition-colors"
+              >
+                Customer Demo
               </button>
             </div>
           </div>

@@ -14,23 +14,25 @@ const createComplaintSchema = z.object({
 function formatComplaintResponse(row) {
   return {
     id: row.id,
-    orderId: row.order_id,
-    order_id: row.order_id,
+    orderId: row.order_id || row.orderId,
+    order_id: row.order_id || row.orderId,
     customer: row.customer,
-    issueType: row.issue_type,
-    issue_type: row.issue_type,
-    message: row.message,
+    issueType: row.issue_type || row.category || row.issueType,
+    issue_type: row.issue_type || row.category || row.issueType,
+    category: row.category || row.issue_type || row.issueType,
+    message: row.message || row.complaint_text,
+    complaint_text: row.complaint_text || row.message,
     status: row.status,
     urgency: row.urgency,
-    aiSummary: row.ai_summary,
-    ai_summary: row.ai_summary,
-    aiSuggestion: row.ai_suggestion,
-    ai_suggestion: row.ai_suggestion,
+    aiSummary: row.ai_summary || row.aiSummary,
+    ai_summary: row.ai_summary || row.aiSummary,
+    aiSuggestion: row.ai_suggestion || row.aiSuggestion,
+    ai_suggestion: row.ai_suggestion || row.aiSuggestion,
     requiresApproval: row.requires_approval !== false,
     requires_approval: row.requires_approval !== false,
     approved: Boolean(row.approved),
-    createdAt: row.created_at,
-    created_at: row.created_at
+    createdAt: row.created_at || row.createdAt,
+    created_at: row.created_at || row.createdAt
   };
 }
 
@@ -106,30 +108,9 @@ router.post('/', async (req, res, next) => {
     // 6. Create notification
     const notificationTitle = `Customer complaint: ${order.customer} — ${aiAnalysis.issueType}`;
     await db.query(`
-      INSERT INTO notifications (title, type, severity)
-      VALUES ($1, $2, $3)
-    `, [
-      notificationTitle,
-      'complaint',
-      aiAnalysis.urgency === 'high' ? 'high' : 'medium'
-    ]);
-
-    // 7. Create AI activity logs
-    const logId1 = `AI-${Date.now().toString().slice(-3)}A`;
-    const logId2 = `AI-${Date.now().toString().slice(-3)}B`;
-    
-    await db.query(`
-      INSERT INTO ai_activity_logs (id, action, type, related_to)
-      VALUES 
-        ($1, $2, 'categorization', $3),
-        ($4, $5, 'auto-reply', $3)
-    `, [
-      logId1,
-      `Auto-categorized complaint ${complaintId} as "${aiAnalysis.issueType}" (${aiAnalysis.urgency} urgency).`,
-      complaintId,
-      logId2,
-      `Auto-replied to ${order.customer} with update: "${aiAnalysis.aiSummary}"`,
-    ]);
+      INSERT INTO notifications (receiver, message, type)
+      VALUES ('owner@orderpilot.ai', $1, 'complaint')
+    `, [notificationTitle]);
 
     res.status(201).json({
       message: 'Complaint submitted and processed by AI pilot successfully',
@@ -143,10 +124,33 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-// GET /api/complaints (Owner only)
-router.get('/', authenticate, requireRole(['owner']), async (req, res, next) => {
+// GET /api/complaints (Authenticated)
+router.get('/', authenticate, async (req, res, next) => {
   try {
-    const result = await db.query('SELECT * FROM complaints ORDER BY created_at DESC');
+    let result;
+    const userId = req.user.userId || req.user.id;
+    const userRole = req.user.role;
+
+    if (userRole === 'owner') {
+      result = await db.query('SELECT * FROM complaints ORDER BY created_at DESC');
+    } else if (userRole === 'customer') {
+      result = await db.query(`
+        SELECT c.* 
+        FROM complaints c
+        WHERE c.customer_id = $1 OR c.customer = $2 OR c.customer = $3
+        ORDER BY c.created_at DESC
+      `, [userId, req.user.name, req.user.email]);
+    } else {
+      // Delivery partner
+      result = await db.query(`
+        SELECT c.* 
+        FROM complaints c
+        JOIN orders o ON c.order_id = o.id
+        WHERE o.partner_id = $1 OR o.delivery_partner_id = $1
+        ORDER BY c.created_at DESC
+      `, [userId]);
+    }
+
     res.json({ complaints: result.rows.map(formatComplaintResponse) });
   } catch (error) {
     next(error);
@@ -170,17 +174,6 @@ router.patch('/:id/approve', authenticate, requireRole(['owner']), async (req, r
       WHERE id = $1
       RETURNING *
     `, [id]);
-
-    // Log AI approval
-    const logId = `AI-${Date.now().toString().slice(-4)}`;
-    await db.query(`
-      INSERT INTO ai_activity_logs (id, action, type, related_to)
-      VALUES ($1, $2, 'resolution', $3)
-    `, [
-      logId,
-      `Business owner approved AI action plan for ${id}: "${complaint.ai_suggestion}"`,
-      id
-    ]);
 
     res.json({
       message: 'Action plan approved and complaint marked resolved',

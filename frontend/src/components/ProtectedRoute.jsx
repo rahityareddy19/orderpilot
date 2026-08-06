@@ -22,7 +22,13 @@ export default function ProtectedRoute({ allowedRole }) {
 
   if (allowedRole && role !== allowedRole) {
     // Redirect to correct dashboard based on role
-    const fallbackPath = role === 'owner' ? '/owner/dashboard' : '/partner/dashboard';
+    const fallbackPath =
+      role === 'owner'
+        ? '/owner/dashboard'
+        : role === 'delivery_partner'
+        ? '/partner/dashboard'
+        : '/customer/dashboard';
+
     return <Navigate to={fallbackPath} replace />;
   }
 

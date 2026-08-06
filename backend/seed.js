@@ -38,40 +38,34 @@ async function seed() {
 
     const users = userRes.rows;
     const customer = users.find(u => u.role === 'customer');
-    const owner = users.find(u => u.role === 'owner');
     const partnerRavi = users.find(u => u.name === 'Ravi Kumar');
     const partnerSuresh = users.find(u => u.name === 'Suresh Reddy');
 
     console.log('Seeding orders...');
     await pool.query(`
-      INSERT INTO orders (id, order_number, customer_id, delivery_partner_id, status, estimated_delivery, current_location, items, amount)
+      INSERT INTO orders (
+        id, order_number, customer, customer_id, partner_id, delivery_partner_id, address, status, priority, estimated_delivery, current_location, items, amount, timeline
+      )
       VALUES 
-        ('ORD-1024', 'ORD-1024', $1, $2, 'delayed', '2026-08-05', 'Indiranagar Hub, Bangalore', '["Wireless Earbuds", "Phone Case"]', 2499.00),
-        ('ORD-1023', 'ORD-1023', $1, $3, 'delivered', '2026-08-04', 'Delivered at Doorstep', '["Running Shoes"]', 3999.00),
-        ('ORD-1022', 'ORD-1022', $1, $2, 'in-transit', '2026-08-06', 'MG Road Express Transit', '["Yoga Mat", "Water Bottle"]', 1849.00)
+        ('ORD-1024', 'ORD-1024', 'Priya Customer', $1, $2, $2, '12, 100ft Road, Indiranagar, Bangalore', 'delayed', 'critical', '2026-08-05', 'Indiranagar Hub, Bangalore', '["Wireless Earbuds", "Phone Case"]', 2499.00, '[{"time": "2026-08-05T10:00:00Z", "event": "Order placed", "status": "completed"}, {"time": "2026-08-05T14:30:00Z", "event": "Delayed at Indiranagar Hub", "status": "issue"}]'),
+        ('ORD-1023', 'ORD-1023', 'Priya Customer', $1, $3, $3, '45, MG Road, Bangalore', 'delivered', 'normal', '2026-08-04', 'Delivered at Doorstep', '["Running Shoes"]', 3999.00, '[{"time": "2026-08-04T09:00:00Z", "event": "Order placed", "status": "completed"}, {"time": "2026-08-04T16:00:00Z", "event": "Delivered successfully", "status": "completed"}]'),
+        ('ORD-1022', 'ORD-1022', 'Priya Customer', $1, $2, $2, '78, Koramangala 4th Block, Bangalore', 'in-transit', 'normal', '2026-08-06', 'MG Road Express Transit', '["Yoga Mat", "Water Bottle"]', 1849.00, '[{"time": "2026-08-06T08:00:00Z", "event": "Order dispatched", "status": "in-progress"}]')
     `, [customer?.id, partnerRavi?.id, partnerSuresh?.id]);
 
     console.log('Seeding complaints...');
     await pool.query(`
-      INSERT INTO complaints (id, order_id, customer_id, complaint_text, category, urgency, sentiment, ai_summary, status)
+      INSERT INTO complaints (
+        id, order_id, customer, customer_id, complaint_text, message, category, issue_type, urgency, sentiment, ai_summary, ai_suggestion, requires_approval, approved, status
+      )
       VALUES 
-        ('CMP-301', 'ORD-1024', $1, 'My order was supposed to arrive yesterday but it still hasn''t been delivered. I need it urgently for a gift.', 'Delivery Delay', 'critical', 'frustrated', 'Customer experienced delivery failure due to missed SLA window.', 'open')
+        ('CMP-301', 'ORD-1024', 'Priya Customer', $1, 'My order was supposed to arrive yesterday but it still hasn''t been delivered. I need it urgently for a gift.', 'My order was supposed to arrive yesterday but it still hasn''t been delivered. I need it urgently for a gift.', 'Delivery Delay', 'Delivery Delay', 'critical', 'frustrated', 'Customer experienced delivery failure due to missed SLA window.', 'Contact delivery partner Ravi Kumar and re-dispatch order before 6 PM today.', true, false, 'open')
     `, [customer?.id]);
-
-    console.log('Seeding AI decisions...');
-    await pool.query(`
-      INSERT INTO ai_decisions (id, complaint_id, agent_name, reasoning, action_taken, confidence)
-      VALUES 
-        ('AID-101', 'CMP-301', 'ComplaintAnalysisAgent', 'Detected severe delay on high priority order for customer gift requirement.', 'Categorized as Delivery Delay with Frustrated sentiment.', 0.98),
-        ('AID-102', 'CMP-301', 'PriorityAgent', 'Delivery window elapsed >24 hours with negative sentiment.', 'Assigned CRITICAL urgency level.', 0.95),
-        ('AID-103', 'CMP-301', 'PlanningAgent', 'Order requires immediate re-route and partner priority contact.', 'Generated 4-step dispatch execution plan.', 0.92)
-    `);
 
     console.log('Seeding tasks...');
     await pool.query(`
-      INSERT INTO tasks (id, complaint_id, assigned_to, priority, description, due_time, completed)
+      INSERT INTO tasks (id, complaint_id, order_id, assigned_to, partner_id, priority, description, notes, due_time, scheduled_time, completed, status)
       VALUES 
-        ('TASK-101', 'CMP-301', $1, 'critical', 'Prioritize re-delivery attempt of ORD-1024 to Indiranagar address before 6 PM today.', '2026-08-05T18:00:00Z', false)
+        ('TASK-101', 'CMP-301', 'ORD-1024', $1, $1, 'critical', 'Prioritize re-delivery attempt of ORD-1024 to Indiranagar address before 6 PM today.', 'Prioritize re-delivery attempt of ORD-1024 to Indiranagar address before 6 PM today.', '2026-08-05T18:00:00Z', '2026-08-05T18:00:00Z', false, 'pending')
     `, [partnerRavi?.id]);
 
     console.log('Seeding notifications...');
@@ -87,8 +81,7 @@ async function seed() {
     await pool.query(`
       INSERT INTO activity_logs (action, performed_by, details)
       VALUES 
-        ('SYSTEM_INITIALIZATION', 'System', '{"message": "Database seeded with initial enterprise records."}'),
-        ('AI_PIPELINE_EXECUTION', 'AI Workflow Orchestrator', '{"complaintId": "CMP-301", "status": "executed"}')
+        ('SYSTEM_INITIALIZATION', 'System', '{"message": "Database seeded with initial enterprise records."}')
     `);
 
     console.log('Database seeding finished successfully!');

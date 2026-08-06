@@ -59,16 +59,16 @@ function formatOrderResponse(row) {
     items: parsedItems,
     status: row.status,
     priority: row.priority,
-    partnerId: row.partner_id,
-    partner_id: row.partner_id,
+    partnerId: row.partner_id || row.delivery_partner_id,
+    partner_id: row.partner_id || row.delivery_partner_id,
     partner: row.partner_name || row.partner || null,
     partner_name: row.partner_name || row.partner || null,
     estimatedDelivery: row.estimated_delivery || row.estimatedDelivery,
     estimated_delivery: row.estimated_delivery || row.estimatedDelivery,
     originalEstimate: row.original_estimate || row.originalEstimate,
     original_estimate: row.original_estimate || row.originalEstimate,
-    placedAt: row.placed_at || row.placedAt,
-    placed_at: row.placed_at || row.placedAt,
+    placedAt: row.placed_at || row.created_at || row.placedAt,
+    placed_at: row.placed_at || row.created_at || row.placedAt,
     amount: parseFloat(row.amount || 0),
     timeline: parsedTimeline,
     customerUpdate: row.customer_update || row.customerUpdate || null,
@@ -151,22 +151,31 @@ router.get('/', authenticate, async (req, res, next) => {
   try {
     let result;
     const userId = req.user.userId || req.user.id;
+    const userRole = req.user.role;
 
-    if (req.user.role === 'owner') {
+    if (userRole === 'owner') {
       result = await db.query(`
         SELECT o.*, u.name as partner_name 
         FROM orders o 
-        LEFT JOIN users u ON o.partner_id = u.id 
-        ORDER BY o.placed_at DESC
+        LEFT JOIN users u ON (o.partner_id = u.id OR o.delivery_partner_id = u.id)
+        ORDER BY o.created_at DESC
       `);
+    } else if (userRole === 'customer') {
+      result = await db.query(`
+        SELECT o.*, u.name as partner_name 
+        FROM orders o 
+        LEFT JOIN users u ON (o.partner_id = u.id OR o.delivery_partner_id = u.id)
+        WHERE o.customer_id = $1 OR o.customer = $2 OR o.customer = $3
+        ORDER BY o.created_at DESC
+      `, [userId, req.user.name, req.user.email]);
     } else {
       // Delivery Partner: only see orders assigned to their userId
       result = await db.query(`
         SELECT o.*, u.name as partner_name 
         FROM orders o 
-        LEFT JOIN users u ON o.partner_id = u.id 
-        WHERE o.partner_id = $1 
-        ORDER BY o.placed_at DESC
+        LEFT JOIN users u ON (o.partner_id = u.id OR o.delivery_partner_id = u.id)
+        WHERE o.partner_id = $1 OR o.delivery_partner_id = $1
+        ORDER BY o.created_at DESC
       `, [userId]);
     }
 
@@ -185,7 +194,7 @@ router.get('/:id', async (req, res, next) => {
     const result = await db.query(`
       SELECT o.*, u.name as partner_name 
       FROM orders o 
-      LEFT JOIN users u ON o.partner_id = u.id 
+      LEFT JOIN users u ON (o.partner_id = u.id OR o.delivery_partner_id = u.id)
       WHERE o.id = $1
     `, [id.toUpperCase()]);
 
@@ -204,7 +213,7 @@ router.get('/:id', async (req, res, next) => {
         const userId = decoded.userId || decoded.id;
         
         // If logged in as partner, verify order is assigned to partner
-        if (decoded.role === 'delivery_partner' && rawOrder.partner_id !== userId) {
+        if (decoded.role === 'delivery_partner' && (rawOrder.partner_id !== userId && rawOrder.delivery_partner_id !== userId)) {
           return res.status(403).json({ error: 'Forbidden. Order is not assigned to your account.' });
         }
       } catch (tokenErr) {
@@ -233,7 +242,7 @@ router.patch('/:id/status', authenticate, async (req, res, next) => {
     const order = orderResult.rows[0];
 
     // Access control: Delivery Partner can only update assigned orders
-    if (req.user.role === 'delivery_partner' && order.partner_id !== userId) {
+    if (req.user.role === 'delivery_partner' && (order.partner_id !== userId && order.delivery_partner_id !== userId)) {
       return res.status(403).json({ error: 'Forbidden. Order is not assigned to your account.' });
     }
 

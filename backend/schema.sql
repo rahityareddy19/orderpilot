@@ -1,4 +1,4 @@
--- OrderPilot AI Enterprise Supabase PostgreSQL Schema
+-- OrderPilot AI Unified PostgreSQL Schema
 
 DROP TABLE IF EXISTS ai_decisions CASCADE;
 DROP TABLE IF EXISTS activity_logs CASCADE;
@@ -21,14 +21,22 @@ CREATE TABLE users (
 -- Orders Table
 CREATE TABLE orders (
   id VARCHAR(50) PRIMARY KEY,
-  order_number VARCHAR(50) UNIQUE NOT NULL,
+  order_number VARCHAR(50),
+  customer VARCHAR(255) DEFAULT 'Customer',
   customer_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  partner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   delivery_partner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  status VARCHAR(50) NOT NULL DEFAULT 'processing' CHECK (status IN ('processing', 'in-transit', 'delayed', 'delivered', 'cancelled')),
-  estimated_delivery DATE,
-  current_location TEXT DEFAULT 'Central Distribution Warehouse',
+  address TEXT DEFAULT 'Main Address',
   items JSONB DEFAULT '[]'::jsonb,
+  status VARCHAR(50) NOT NULL DEFAULT 'processing' CHECK (status IN ('processing', 'in-transit', 'delayed', 'delivered', 'cancelled')),
+  priority VARCHAR(50) DEFAULT 'normal' CHECK (priority IN ('critical', 'high', 'normal', 'low')),
+  estimated_delivery DATE,
+  original_estimate DATE,
+  current_location TEXT DEFAULT 'Central Distribution Warehouse',
   amount NUMERIC(10, 2) DEFAULT 0.00,
+  timeline JSONB DEFAULT '[]'::jsonb,
+  customer_update TEXT,
+  placed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -36,12 +44,18 @@ CREATE TABLE orders (
 CREATE TABLE complaints (
   id VARCHAR(50) PRIMARY KEY,
   order_id VARCHAR(50) REFERENCES orders(id) ON DELETE CASCADE,
+  customer VARCHAR(255) DEFAULT 'Customer',
   customer_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  complaint_text TEXT NOT NULL,
+  complaint_text TEXT,
+  message TEXT,
   category VARCHAR(100) DEFAULT 'General',
-  urgency VARCHAR(50) DEFAULT 'medium' CHECK (urgency IN ('critical', 'high', 'medium', 'low')),
+  issue_type VARCHAR(100) DEFAULT 'General',
+  urgency VARCHAR(50) DEFAULT 'medium' CHECK (urgency IN ('critical', 'high', 'medium', 'low', 'normal')),
   sentiment VARCHAR(50) DEFAULT 'negative',
   ai_summary TEXT,
+  ai_suggestion TEXT,
+  requires_approval BOOLEAN DEFAULT true,
+  approved BOOLEAN DEFAULT false,
   status VARCHAR(50) DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'resolved', 'escalated')),
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
@@ -50,20 +64,27 @@ CREATE TABLE complaints (
 CREATE TABLE tasks (
   id VARCHAR(50) PRIMARY KEY,
   complaint_id VARCHAR(50) REFERENCES complaints(id) ON DELETE CASCADE,
+  order_id VARCHAR(50) REFERENCES orders(id) ON DELETE CASCADE,
   assigned_to INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  priority VARCHAR(50) DEFAULT 'medium' CHECK (priority IN ('critical', 'high', 'medium', 'low')),
-  description TEXT NOT NULL,
-  due_time TIMESTAMPTZ,
+  partner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  priority VARCHAR(50) DEFAULT 'medium',
+  description TEXT,
+  notes TEXT,
+  scheduled_time TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  due_time TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP + INTERVAL '1 day',
   completed BOOLEAN DEFAULT false,
+  status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'in-progress', 'completed')),
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Notifications Table
 CREATE TABLE notifications (
   id SERIAL PRIMARY KEY,
-  receiver VARCHAR(255) NOT NULL, -- email or role or user_id
+  receiver VARCHAR(255) NOT NULL,
+  title TEXT,
   message TEXT NOT NULL,
-  type VARCHAR(50) DEFAULT 'info' CHECK (type IN ('delivery', 'complaint', 'system', 'info', 'alert')),
+  type VARCHAR(50) DEFAULT 'info',
+  severity VARCHAR(50) DEFAULT 'medium',
   read BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
