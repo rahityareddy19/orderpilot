@@ -115,11 +115,14 @@ router.post('/', authenticate, requireRole(['owner']), async (req, res, next) =>
       { time: new Date().toISOString(), event: 'Payment confirmed', status: 'completed' }
     ];
 
+    const userRes = await db.query("SELECT id FROM users WHERE name = $1 AND role = 'customer' LIMIT 1", [validated.customer.trim()]);
+    const customerId = userRes.rows.length > 0 ? userRes.rows[0].id : null;
+
     const result = await db.query(`
       INSERT INTO orders (
         id, customer, address, items, status, priority, partner_id, 
-        estimated_delivery, original_estimate, placed_at, amount, timeline
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        estimated_delivery, original_estimate, placed_at, amount, timeline, customer_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       RETURNING *
     `, [
       orderId,
@@ -133,7 +136,8 @@ router.post('/', authenticate, requireRole(['owner']), async (req, res, next) =>
       estDelivery,
       new Date().toISOString(),
       validated.amount,
-      JSON.stringify(defaultTimeline)
+      JSON.stringify(defaultTimeline),
+      customerId
     ]);
 
     let finalPartnerId = partnerId;
@@ -214,11 +218,14 @@ router.put('/:id', authenticate, requireRole(['owner']), async (req, res, next) 
 
     const partnerId = validated.partner_id || validated.partnerId || null;
 
+    const userRes = await db.query("SELECT id FROM users WHERE name = $1 AND role = 'customer' LIMIT 1", [validated.customer.trim()]);
+    const customerId = userRes.rows.length > 0 ? userRes.rows[0].id : null;
+
     const result = await db.query(`
       UPDATE orders SET 
         customer = $1, address = $2, items = $3, priority = $4, 
-        amount = $5, partner_id = $6
-      WHERE id = $7
+        amount = $5, partner_id = $6, customer_id = $7
+      WHERE id = $8
       RETURNING *
     `, [
       validated.customer,
@@ -227,6 +234,7 @@ router.put('/:id', authenticate, requireRole(['owner']), async (req, res, next) 
       validated.priority,
       validated.amount,
       partnerId,
+      customerId,
       uppercaseId
     ]);
 

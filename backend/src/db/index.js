@@ -539,7 +539,8 @@ async function executeQuery(text, params = []) {
       original_estimate: params[8],
       placed_at: params[9],
       amount: params[10],
-      timeline: params[11]
+      timeline: params[11],
+      customer_id: params[12]
     };
     mockDb.orders.unshift(newOrder);
     return { rows: [newOrder], rowCount: 1 };
@@ -664,6 +665,7 @@ async function executeQuery(text, params = []) {
         found.amount = params[4];
         found.partner_id = params[5];
         found.delivery_partner_id = params[5];
+        found.customer_id = params[6];
       } else if (lowerSql.includes('partner_id = $1')) {
         // Auto assign query
         found.partner_id = params[0];
