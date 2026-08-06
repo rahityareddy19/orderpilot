@@ -42,10 +42,28 @@ export default function Login() {
     }
   };
 
-  const fillDemoAccount = (demoEmail, demoPassword) => {
+  const handleQuickDemoLogin = async (demoEmail, demoPassword) => {
     setEmail(demoEmail);
     setPassword(demoPassword);
     setError('');
+    setSubmitting(true);
+
+    const result = await login(demoEmail, demoPassword);
+
+    setSubmitting(false);
+
+    if (result.success) {
+      const userRole = result.user?.role;
+      if (userRole === 'owner') {
+        navigate('/owner/dashboard');
+      } else if (userRole === 'delivery_partner') {
+        navigate('/partner/dashboard');
+      } else {
+        navigate('/customer/dashboard');
+      }
+    } else {
+      setError(result.error || 'Invalid credentials. Please try again.');
+    }
   };
 
   return (
@@ -109,14 +127,14 @@ export default function Login() {
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter password"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={submitting}>
+            <Button type="submit" variant="primary" size="md" className="w-full justify-center" disabled={submitting}>
               {submitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin mr-2" /> Signing in...
@@ -128,34 +146,41 @@ export default function Login() {
           </form>
 
           {/* Quick Demo Fill Buttons */}
-          <div className="mt-6 pt-6 border-t border-slate-200 text-center">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+          <div className="mt-6 text-center">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
               Quick Demo Login Accounts
             </p>
             <div className="flex items-center justify-center gap-2 flex-wrap">
               <button
                 type="button"
-                onClick={() => fillDemoAccount('owner@orderpilot.ai', 'Password123')}
-                className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-medium transition-colors"
+                onClick={() => handleQuickDemoLogin('owner@orderpilot.ai', 'Password123')}
+                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
               >
                 Owner Demo
               </button>
               <button
                 type="button"
-                onClick={() => fillDemoAccount('partner@orderpilot.ai', 'Password123')}
-                className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-medium transition-colors"
+                onClick={() => handleQuickDemoLogin('partner@orderpilot.ai', 'Password123')}
+                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
               >
                 Partner Demo
               </button>
               <button
                 type="button"
-                onClick={() => fillDemoAccount('customer@orderpilot.ai', 'Password123')}
-                className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-medium transition-colors"
+                onClick={() => handleQuickDemoLogin('customer@orderpilot.ai', 'Password123')}
+                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors font-sans"
               >
                 Customer Demo
               </button>
             </div>
           </div>
+
+          <p className="mt-6 text-center text-sm text-slate-500">
+            Customer without an account?{' '}
+            <Link to="/track-order" className="text-indigo-600 hover:text-indigo-700 font-medium">
+              Track your order here
+            </Link>
+          </p>
         </div>
       </div>
     </div>
