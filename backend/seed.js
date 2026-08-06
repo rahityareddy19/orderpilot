@@ -32,7 +32,8 @@ async function seed() {
         ('Priya Customer', 'customer@orderpilot.ai', $1, 'customer'),
         ('Business Owner', 'owner@orderpilot.ai', $1, 'owner'),
         ('Ravi Kumar', 'partner@orderpilot.ai', $1, 'delivery_partner'),
-        ('Suresh Reddy', 'suresh@orderpilot.ai', $1, 'delivery_partner')
+        ('Suresh Reddy', 'suresh@orderpilot.ai', $1, 'delivery_partner'),
+        ('Anish Sharma', 'anish@orderpilot.ai', $1, 'delivery_partner')
       RETURNING id, name, email, role;
     `, [passwordHash]);
 
@@ -44,12 +45,16 @@ async function seed() {
     console.log('Seeding orders...');
     await pool.query(`
       INSERT INTO orders (
-        id, order_number, customer, customer_id, partner_id, delivery_partner_id, address, status, priority, estimated_delivery, current_location, items, amount, timeline
+        id, order_number, customer, customer_id, partner_id, delivery_partner_id, address, status, priority, estimated_delivery, original_estimate, current_location, items, amount, timeline
       )
       VALUES 
-        ('ORD-1024', 'ORD-1024', 'Priya Customer', $1, $2, $2, '12, 100ft Road, Indiranagar, Bangalore', 'delayed', 'critical', '2026-08-05', 'Indiranagar Hub, Bangalore', '["Wireless Earbuds", "Phone Case"]', 2499.00, '[{"time": "2026-08-05T10:00:00Z", "event": "Order placed", "status": "completed"}, {"time": "2026-08-05T14:30:00Z", "event": "Delayed at Indiranagar Hub", "status": "issue"}]'),
-        ('ORD-1023', 'ORD-1023', 'Priya Customer', $1, $3, $3, '45, MG Road, Bangalore', 'delivered', 'normal', '2026-08-04', 'Delivered at Doorstep', '["Running Shoes"]', 3999.00, '[{"time": "2026-08-04T09:00:00Z", "event": "Order placed", "status": "completed"}, {"time": "2026-08-04T16:00:00Z", "event": "Delivered successfully", "status": "completed"}]'),
-        ('ORD-1022', 'ORD-1022', 'Priya Customer', $1, $2, $2, '78, Koramangala 4th Block, Bangalore', 'in-transit', 'normal', '2026-08-06', 'MG Road Express Transit', '["Yoga Mat", "Water Bottle"]', 1849.00, '[{"time": "2026-08-06T08:00:00Z", "event": "Order dispatched", "status": "in-progress"}]')
+        ('ORD-1024', 'ORD-1024', 'Priya Customer', $1, $2, $2, '12, 100ft Road, Indiranagar, Bangalore', 'delayed', 'critical', '2026-08-05', '2026-08-04', 'Indiranagar Regional Hub, Bangalore', '["Wireless Earbuds", "Phone Case"]', 2499.00, '[{"time": "2026-08-05T10:00:00Z", "event": "Order placed", "status": "completed"}, {"time": "2026-08-05T14:30:00Z", "event": "SLA Window Missed - Heavy Traffic Corridor", "status": "issue"}]'),
+        ('ORD-1027', 'ORD-1027', 'Kavita Sundaram', $1, $2, $2, '44, Cambridge Layout, Ulsoor, Bangalore', 'in-transit', 'high', '2026-08-06', '2026-08-06', 'Ulsoor Transit Point', '["Smart Fitness Watch Series 5"]', 6999.00, '[{"time": "2026-08-06T07:30:00Z", "event": "Out for express delivery", "status": "in-progress"}]'),
+        ('ORD-1025', 'ORD-1025', 'Vikram Sethi', $1, $2, $2, '88, Inner Ring Road, Domlur, Bangalore', 'processing', 'high', '2026-08-06', '2026-08-06', 'Central Sorting Facility', '["Aluminium Laptop Stand", "7-in-1 USB-C Hub"]', 3499.00, '[{"time": "2026-08-06T08:15:00Z", "event": "Order packed", "status": "completed"}]'),
+        ('ORD-1022', 'ORD-1022', 'Sneha Verma', $1, $2, $2, '78, Koramangala 4th Block, Bangalore', 'in-transit', 'normal', '2026-08-06', '2026-08-06', 'MG Road Express Transit Hub', '["Yoga Mat", "Steel Water Bottle"]', 1849.00, '[{"time": "2026-08-06T08:00:00Z", "event": "Order dispatched", "status": "in-progress"}]'),
+        ('ORD-1029', 'ORD-1029', 'Rohan Deshmukh', $1, $2, $2, '56, Trinity Circle, MG Road, Bangalore', 'processing', 'normal', '2026-08-07', '2026-08-07', 'Central Distribution Warehouse', '["Noise Cancelling Headphones"]', 8999.00, '[{"time": "2026-08-06T09:45:00Z", "event": "Order scheduled for evening dispatch", "status": "completed"}]'),
+        ('ORD-1026', 'ORD-1026', 'Meera Iyer', $1, $2, $2, '15, Bellandur Lake Road, Bangalore', 'delivered', 'normal', '2026-08-05', '2026-08-05', 'Delivered at Security Desk', '["Organic Coffee Beans (1kg)"]', 1450.00, '[{"time": "2026-08-05T11:30:00Z", "event": "Delivered successfully", "status": "completed"}]'),
+        ('ORD-1028', 'ORD-1028', 'Arjun Menon', $1, $2, $2, '22, Victoria Layout, Bangalore', 'delivered', 'high', '2026-08-05', '2026-08-05', 'Handed Over to Customer', '["GPS Trail Tracker Watch"]', 4500.00, '[{"time": "2026-08-05T15:45:00Z", "event": "Delivered with OTP", "status": "completed"}]')
     `, [customer?.id, partnerRavi?.id, partnerSuresh?.id]);
 
     console.log('Seeding complaints...');
@@ -58,30 +63,28 @@ async function seed() {
         id, order_id, customer, customer_id, complaint_text, message, category, issue_type, urgency, sentiment, ai_summary, ai_suggestion, requires_approval, approved, status
       )
       VALUES 
-        ('CMP-301', 'ORD-1024', 'Priya Customer', $1, 'My order was supposed to arrive yesterday but it still hasn''t been delivered. I need it urgently for a gift.', 'My order was supposed to arrive yesterday but it still hasn''t been delivered. I need it urgently for a gift.', 'Delivery Delay', 'Delivery Delay', 'critical', 'frustrated', 'Customer experienced delivery failure due to missed SLA window.', 'Contact delivery partner Ravi Kumar and re-dispatch order before 6 PM today.', true, false, 'open')
+        ('CMP-301', 'ORD-1024', 'Priya Customer', $1, 'My order was supposed to arrive yesterday but it still has not been delivered. I need it urgently for a gift.', 'My order was supposed to arrive yesterday but it still has not been delivered. I need it urgently for a gift.', 'Delivery Delay', 'Delivery Delay', 'critical', 'frustrated', 'Customer experienced delivery failure due to missed SLA window in Indiranagar corridor.', 'Re-assign priority task to partner Ravi Kumar with direct customer dispatch before 6 PM today.', true, false, 'open')
     `, [customer?.id]);
 
     console.log('Seeding tasks...');
     await pool.query(`
       INSERT INTO tasks (id, complaint_id, order_id, assigned_to, partner_id, priority, description, notes, due_time, scheduled_time, completed, status)
       VALUES 
-        ('TASK-101', 'CMP-301', 'ORD-1024', $1, $1, 'critical', 'Prioritize re-delivery attempt of ORD-1024 to Indiranagar address before 6 PM today.', 'Prioritize re-delivery attempt of ORD-1024 to Indiranagar address before 6 PM today.', '2026-08-05T18:00:00Z', '2026-08-05T18:00:00Z', false, 'pending')
+        ('TASK-101', 'CMP-301', 'ORD-1024', $1, $1, 'critical', 'Prioritize express re-delivery attempt of ORD-1024 to Indiranagar address before 6 PM today.', 'Customer requested urgency for birthday gift. Contact customer before arrival.', '2026-08-05T18:00:00Z', '2026-08-05T18:00:00Z', false, 'in-progress'),
+        ('TASK-106', 'CMP-304', 'ORD-1027', $1, $1, 'high', 'Express delivery of Smart Fitness Watch (ORD-1027) to Cambridge Layout.', 'Call recipient 15 minutes prior to arrival.', '2026-08-06T18:00:00Z', '2026-08-06T14:00:00Z', false, 'in-progress'),
+        ('TASK-104', NULL, 'ORD-1025', $1, $1, 'high', 'Deliver ORD-1025 (Laptop Stand & USB-C Hub) to Domlur Inner Ring Road.', 'Corporate office reception delivery.', '2026-08-06T19:00:00Z', '2026-08-06T15:00:00Z', false, 'pending'),
+        ('TASK-102', NULL, 'ORD-1022', $1, $1, 'normal', 'Deliver ORD-1022 (Yoga Mat & Water Bottle) to Koramangala 4th Block.', 'Standard afternoon delivery slot.', '2026-08-06T20:00:00Z', '2026-08-06T16:00:00Z', false, 'pending'),
+        ('TASK-107', NULL, 'ORD-1029', $1, $1, 'normal', 'Evening slot dispatch for ORD-1029 (Headphones) to Trinity Circle, MG Road.', 'Customer available after 5 PM.', '2026-08-06T21:00:00Z', '2026-08-06T17:00:00Z', false, 'pending'),
+        ('TASK-105', NULL, 'ORD-1026', $1, $1, 'normal', 'Deliver ORD-1026 (Coffee Beans) to Bellandur.', 'Delivered to security desk.', '2026-08-05T12:00:00Z', '2026-08-05T11:00:00Z', true, 'completed'),
+        ('TASK-108', NULL, 'ORD-1028', $1, $1, 'high', 'Priority hand-off for ORD-1028 to Victoria Layout.', 'Verified via OTP with customer.', '2026-08-05T16:00:00Z', '2026-08-05T15:00:00Z', true, 'completed')
     `, [partnerRavi?.id]);
 
     console.log('Seeding notifications...');
     await pool.query(`
-      INSERT INTO notifications (receiver, message, type, read)
+      INSERT INTO notifications (receiver, message, type, severity, read)
       VALUES 
-        ('owner@orderpilot.ai', 'Critical complaint filed for ORD-1024: Delivery Delay', 'complaint', false),
-        ('partner@orderpilot.ai', 'New critical task assigned for order ORD-1024', 'delivery', false),
-        ('customer@orderpilot.ai', 'OrderPilot AI has updated your order resolution timeline for ORD-1024', 'info', true)
-    `);
-
-    console.log('Seeding activity logs...');
-    await pool.query(`
-      INSERT INTO activity_logs (action, performed_by, details)
-      VALUES 
-        ('SYSTEM_INITIALIZATION', 'System', '{"message": "Database seeded with initial enterprise records."}')
+        ('partner@orderpilot.ai', 'Express re-delivery assigned for ORD-1024 (Indiranagar)', 'delivery', 'critical', false),
+        ('partner@orderpilot.ai', 'Recipient requested 15-min advance call for ORD-1027 (Ulsoor)', 'info', 'high', false)
     `);
 
     console.log('Database seeding finished successfully!');

@@ -17,17 +17,18 @@ if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('[YOUR-PASSWO
     useMock = true;
   }
 } else {
-  console.warn('DATABASE_URL not set or contains placeholder password. Running with Resilient In-Memory Database Store.');
+  console.warn('DATABASE_URL not set or contains placeholder. Running with Resilient In-Memory Database Store.');
   useMock = true;
 }
 
-// In-Memory Fallback Database Store
+// Enterprise Seeded Mock Database
 const mockDb = {
   users: [
-    { id: 1, name: 'Priya Customer', email: 'customer@orderpilot.ai', password: '$2b$10$WqU1J8.vE8uG0W4Gz9Vb3e5r1xK4L6m7n8o9p0q1r2s3t4u5v6w7x', role: 'customer' },
-    { id: 2, name: 'Business Owner', email: 'owner@orderpilot.ai', password: '$2b$10$WqU1J8.vE8uG0W4Gz9Vb3e5r1xK4L6m7n8o9p0q1r2s3t4u5v6w7x', role: 'owner' },
-    { id: 3, name: 'Ravi Kumar', email: 'partner@orderpilot.ai', password: '$2b$10$WqU1J8.vE8uG0W4Gz9Vb3e5r1xK4L6m7n8o9p0q1r2s3t4u5v6w7x', role: 'delivery_partner' },
-    { id: 4, name: 'Suresh Reddy', email: 'suresh@orderpilot.ai', password: '$2b$10$WqU1J8.vE8uG0W4Gz9Vb3e5r1xK4L6m7n8o9p0q1r2s3t4u5v6w7x', role: 'delivery_partner' }
+    { id: 1, name: 'Priya Customer', email: 'customer@orderpilot.ai', password: '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', role: 'customer' },
+    { id: 2, name: 'Business Owner', email: 'owner@orderpilot.ai', password: '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', role: 'owner' },
+    { id: 3, name: 'Ravi Kumar', email: 'partner@orderpilot.ai', password: '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', role: 'delivery_partner' },
+    { id: 4, name: 'Suresh Reddy', email: 'suresh@orderpilot.ai', password: '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', role: 'delivery_partner' },
+    { id: 5, name: 'Anish Sharma', email: 'anish@orderpilot.ai', password: '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', role: 'delivery_partner' }
   ],
   orders: [
     {
@@ -42,43 +43,68 @@ const mockDb = {
       status: 'delayed',
       priority: 'critical',
       estimated_delivery: '2026-08-05',
-      current_location: 'Indiranagar Hub, Bangalore',
+      original_estimate: '2026-08-04',
+      current_location: 'Indiranagar Regional Hub, Bangalore',
       items: ['Wireless Earbuds', 'Phone Case'],
       amount: 2499.00,
       timeline: [
         { time: '2026-08-05T10:00:00Z', event: 'Order placed', status: 'completed' },
-        { time: '2026-08-05T14:30:00Z', event: 'Delayed at Indiranagar Hub', status: 'issue' }
+        { time: '2026-08-05T12:00:00Z', event: 'Dispatched to Indiranagar Hub', status: 'completed' },
+        { time: '2026-08-05T14:30:00Z', event: 'SLA Window Missed - Heavy Traffic Corridor', status: 'issue' }
       ],
-      customer_update: 'Customer reported severe delivery delay.',
+      customer_update: 'AI Pilot: Priority re-dispatch authorized by owner.',
       placed_at: '2026-08-05T10:00:00Z',
       created_at: '2026-08-05T10:00:00Z'
     },
     {
-      id: 'ORD-1023',
-      order_number: 'ORD-1023',
-      customer: 'Priya Customer',
+      id: 'ORD-1027',
+      order_number: 'ORD-1027',
+      customer: 'Kavita Sundaram',
       customer_id: 1,
-      partner_id: 4,
-      delivery_partner_id: 4,
-      partner_name: 'Suresh Reddy',
-      address: '45, MG Road, Bangalore',
-      status: 'delivered',
-      priority: 'normal',
-      estimated_delivery: '2026-08-04',
-      current_location: 'Delivered at Doorstep',
-      items: ['Running Shoes'],
-      amount: 3999.00,
+      partner_id: 3,
+      delivery_partner_id: 3,
+      partner_name: 'Ravi Kumar',
+      address: '44, Cambridge Layout, Ulsoor, Bangalore',
+      status: 'in-transit',
+      priority: 'high',
+      estimated_delivery: '2026-08-06',
+      original_estimate: '2026-08-06',
+      current_location: 'Ulsoor Transit Point',
+      items: ['Smart Fitness Watch Series 5'],
+      amount: 6999.00,
       timeline: [
-        { time: '2026-08-04T09:00:00Z', event: 'Order placed', status: 'completed' },
-        { time: '2026-08-04T16:00:00Z', event: 'Delivered successfully', status: 'completed' }
+        { time: '2026-08-06T07:30:00Z', event: 'Order dispatched', status: 'completed' },
+        { time: '2026-08-06T09:00:00Z', event: 'Out for express delivery', status: 'in-progress' }
       ],
-      placed_at: '2026-08-04T09:00:00Z',
-      created_at: '2026-08-04T09:00:00Z'
+      placed_at: '2026-08-06T07:30:00Z',
+      created_at: '2026-08-06T07:30:00Z'
+    },
+    {
+      id: 'ORD-1025',
+      order_number: 'ORD-1025',
+      customer: 'Vikram Sethi',
+      customer_id: 1,
+      partner_id: 3,
+      delivery_partner_id: 3,
+      partner_name: 'Ravi Kumar',
+      address: '88, Inner Ring Road, Domlur, Bangalore',
+      status: 'processing',
+      priority: 'high',
+      estimated_delivery: '2026-08-06',
+      original_estimate: '2026-08-06',
+      current_location: 'Central Sorting Facility',
+      items: ['Aluminium Laptop Stand', '7-in-1 USB-C Hub'],
+      amount: 3499.00,
+      timeline: [
+        { time: '2026-08-06T08:15:00Z', event: 'Order verified & packed', status: 'completed' }
+      ],
+      placed_at: '2026-08-06T08:15:00Z',
+      created_at: '2026-08-06T08:15:00Z'
     },
     {
       id: 'ORD-1022',
       order_number: 'ORD-1022',
-      customer: 'Priya Customer',
+      customer: 'Sneha Verma',
       customer_id: 1,
       partner_id: 3,
       delivery_partner_id: 3,
@@ -87,14 +113,83 @@ const mockDb = {
       status: 'in-transit',
       priority: 'normal',
       estimated_delivery: '2026-08-06',
-      current_location: 'MG Road Express Transit',
-      items: ['Yoga Mat', 'Water Bottle'],
+      original_estimate: '2026-08-06',
+      current_location: 'MG Road Express Transit Hub',
+      items: ['Yoga Mat', 'Steel Water Bottle'],
       amount: 1849.00,
       timeline: [
-        { time: '2026-08-06T08:00:00Z', event: 'Order dispatched', status: 'in-progress' }
+        { time: '2026-08-06T08:00:00Z', event: 'Order dispatched from warehouse', status: 'in-progress' }
       ],
       placed_at: '2026-08-06T08:00:00Z',
       created_at: '2026-08-06T08:00:00Z'
+    },
+    {
+      id: 'ORD-1029',
+      order_number: 'ORD-1029',
+      customer: 'Rohan Deshmukh',
+      customer_id: 1,
+      partner_id: 3,
+      delivery_partner_id: 3,
+      partner_name: 'Ravi Kumar',
+      address: '56, Trinity Circle, MG Road, Bangalore',
+      status: 'processing',
+      priority: 'normal',
+      estimated_delivery: '2026-08-07',
+      original_estimate: '2026-08-07',
+      current_location: 'Central Distribution Warehouse',
+      items: ['Noise Cancelling Wireless Headphones'],
+      amount: 8999.00,
+      timeline: [
+        { time: '2026-08-06T09:45:00Z', event: 'Order scheduled for evening dispatch', status: 'completed' }
+      ],
+      placed_at: '2026-08-06T09:45:00Z',
+      created_at: '2026-08-06T09:45:00Z'
+    },
+    {
+      id: 'ORD-1026',
+      order_number: 'ORD-1026',
+      customer: 'Meera Iyer',
+      customer_id: 1,
+      partner_id: 3,
+      delivery_partner_id: 3,
+      partner_name: 'Ravi Kumar',
+      address: '15, Bellandur Lake Road, Bangalore',
+      status: 'delivered',
+      priority: 'normal',
+      estimated_delivery: '2026-08-05',
+      original_estimate: '2026-08-05',
+      current_location: 'Delivered at Security Desk',
+      items: ['Organic Coffee Beans (1kg)', 'French Press'],
+      amount: 1450.00,
+      timeline: [
+        { time: '2026-08-05T08:00:00Z', event: 'Order placed', status: 'completed' },
+        { time: '2026-08-05T11:30:00Z', event: 'Delivered to recipient', status: 'completed' }
+      ],
+      placed_at: '2026-08-05T08:00:00Z',
+      created_at: '2026-08-05T08:00:00Z'
+    },
+    {
+      id: 'ORD-1028',
+      order_number: 'ORD-1028',
+      customer: 'Arjun Menon',
+      customer_id: 1,
+      partner_id: 3,
+      delivery_partner_id: 3,
+      partner_name: 'Ravi Kumar',
+      address: '22, Victoria Layout, Bangalore',
+      status: 'delivered',
+      priority: 'high',
+      estimated_delivery: '2026-08-05',
+      original_estimate: '2026-08-05',
+      current_location: 'Handed Over to Customer',
+      items: ['GPS Trail Tracker Watch'],
+      amount: 4500.00,
+      timeline: [
+        { time: '2026-08-05T13:00:00Z', event: 'Dispatched for priority delivery', status: 'completed' },
+        { time: '2026-08-05T15:45:00Z', event: 'Delivered & verified with OTP', status: 'completed' }
+      ],
+      placed_at: '2026-08-05T13:00:00Z',
+      created_at: '2026-08-05T13:00:00Z'
     }
   ],
   complaints: [
@@ -103,18 +198,36 @@ const mockDb = {
       order_id: 'ORD-1024',
       customer: 'Priya Customer',
       customer_id: 1,
-      complaint_text: 'My order was supposed to arrive yesterday but it still has not been delivered. I need it urgently.',
-      message: 'My order was supposed to arrive yesterday but it still has not been delivered. I need it urgently.',
+      complaint_text: 'My order was supposed to arrive yesterday but it still has not been delivered. I need it urgently for a birthday gift.',
+      message: 'My order was supposed to arrive yesterday but it still has not been delivered. I need it urgently for a birthday gift.',
       category: 'Delivery Delay',
       issue_type: 'Delivery Delay',
       urgency: 'critical',
       sentiment: 'frustrated',
-      ai_summary: 'Customer experienced delivery failure due to missed SLA window.',
-      ai_suggestion: 'Contact delivery partner Ravi Kumar and re-dispatch order before 6 PM today.',
+      ai_summary: 'Customer experienced delivery failure due to missed SLA window in Indiranagar corridor.',
+      ai_suggestion: 'Re-assign priority task to partner Ravi Kumar with direct customer dispatch before 6 PM today.',
       requires_approval: true,
       approved: false,
       status: 'open',
-      created_at: new Date().toISOString()
+      created_at: new Date(Date.now() - 3600000).toISOString()
+    },
+    {
+      id: 'CMP-304',
+      order_id: 'ORD-1027',
+      customer: 'Kavita Sundaram',
+      customer_id: 1,
+      complaint_text: 'Recipient requested pre-delivery call 15 minutes before arrival.',
+      message: 'Recipient requested pre-delivery call 15 minutes before arrival.',
+      category: 'Delivery Instructions',
+      issue_type: 'Delivery Instructions',
+      urgency: 'high',
+      sentiment: 'neutral',
+      ai_summary: 'Special dispatch call request attached to delivery profile.',
+      ai_suggestion: 'Prompt delivery partner Ravi Kumar with automated IVR call before doorstep approach.',
+      requires_approval: false,
+      approved: true,
+      status: 'in_progress',
+      created_at: new Date(Date.now() - 5400000).toISOString()
     }
   ],
   tasks: [
@@ -126,27 +239,157 @@ const mockDb = {
       partner_id: 3,
       partner_name: 'Ravi Kumar',
       priority: 'critical',
-      description: 'Prioritize re-delivery attempt of ORD-1024 to Indiranagar address before 6 PM today.',
-      notes: 'Prioritize re-delivery attempt of ORD-1024 to Indiranagar address before 6 PM today.',
-      due_time: '2026-08-06T18:00:00Z',
-      scheduled_time: '2026-08-06T18:00:00Z',
+      description: 'Prioritize express re-delivery attempt of ORD-1024 to Indiranagar address before 6 PM today.',
+      notes: 'Customer requested urgency for birthday gift. Call customer before arrival.',
+      due_time: new Date(Date.now() + 18000000).toISOString(),
+      scheduled_time: new Date(Date.now() + 3600000).toISOString(),
+      completed: false,
+      status: 'in-progress',
+      created_at: new Date(Date.now() - 3600000).toISOString()
+    },
+    {
+      id: 'TASK-106',
+      complaint_id: 'CMP-304',
+      order_id: 'ORD-1027',
+      assigned_to: 3,
+      partner_id: 3,
+      partner_name: 'Ravi Kumar',
+      priority: 'high',
+      description: 'Express delivery of Smart Fitness Watch (ORD-1027) to Cambridge Layout.',
+      notes: 'Call recipient 15 minutes prior to arrival as requested.',
+      due_time: new Date(Date.now() + 21600000).toISOString(),
+      scheduled_time: new Date(Date.now() + 5400000).toISOString(),
+      completed: false,
+      status: 'in-progress',
+      created_at: new Date(Date.now() - 5400000).toISOString()
+    },
+    {
+      id: 'TASK-104',
+      complaint_id: null,
+      order_id: 'ORD-1025',
+      assigned_to: 3,
+      partner_id: 3,
+      partner_name: 'Ravi Kumar',
+      priority: 'high',
+      description: 'Deliver ORD-1025 (Laptop Stand & USB-C Hub) to Domlur Inner Ring Road.',
+      notes: 'Corporate office reception delivery.',
+      due_time: new Date(Date.now() + 28800000).toISOString(),
+      scheduled_time: new Date(Date.now() + 7200000).toISOString(),
       completed: false,
       status: 'pending',
-      created_at: new Date().toISOString()
+      created_at: new Date(Date.now() - 7200000).toISOString()
+    },
+    {
+      id: 'TASK-102',
+      complaint_id: null,
+      order_id: 'ORD-1022',
+      assigned_to: 3,
+      partner_id: 3,
+      partner_name: 'Ravi Kumar',
+      priority: 'normal',
+      description: 'Deliver ORD-1022 (Yoga Mat & Water Bottle) to Koramangala 4th Block.',
+      notes: 'Standard afternoon delivery slot.',
+      due_time: new Date(Date.now() + 43200000).toISOString(),
+      scheduled_time: new Date(Date.now() + 14400000).toISOString(),
+      completed: false,
+      status: 'pending',
+      created_at: new Date(Date.now() - 10800000).toISOString()
+    },
+    {
+      id: 'TASK-107',
+      complaint_id: null,
+      order_id: 'ORD-1029',
+      assigned_to: 3,
+      partner_id: 3,
+      partner_name: 'Ravi Kumar',
+      priority: 'normal',
+      description: 'Evening slot dispatch for ORD-1029 (Headphones) to Trinity Circle, MG Road.',
+      notes: 'Customer available after 5 PM.',
+      due_time: new Date(Date.now() + 57600000).toISOString(),
+      scheduled_time: new Date(Date.now() + 21600000).toISOString(),
+      completed: false,
+      status: 'pending',
+      created_at: new Date(Date.now() - 12000000).toISOString()
+    },
+    {
+      id: 'TASK-105',
+      complaint_id: null,
+      order_id: 'ORD-1026',
+      assigned_to: 3,
+      partner_id: 3,
+      partner_name: 'Ravi Kumar',
+      priority: 'normal',
+      description: 'Deliver ORD-1026 (Coffee Beans & French Press) to Bellandur.',
+      notes: 'Delivered to security desk as instructed.',
+      due_time: new Date(Date.now() - 86400000).toISOString(),
+      scheduled_time: new Date(Date.now() - 90000000).toISOString(),
+      completed: true,
+      status: 'completed',
+      created_at: new Date(Date.now() - 93600000).toISOString()
+    },
+    {
+      id: 'TASK-108',
+      complaint_id: null,
+      order_id: 'ORD-1028',
+      assigned_to: 3,
+      partner_id: 3,
+      partner_name: 'Ravi Kumar',
+      priority: 'high',
+      description: 'Priority hand-off for ORD-1028 (GPS Trail Tracker Watch) to Victoria Layout.',
+      notes: 'Verified via OTP with customer.',
+      due_time: new Date(Date.now() - 43200000).toISOString(),
+      scheduled_time: new Date(Date.now() - 50000000).toISOString(),
+      completed: true,
+      status: 'completed',
+      created_at: new Date(Date.now() - 54000000).toISOString()
     }
   ],
   notifications: [
-    { id: 1, receiver: 'owner@orderpilot.ai', title: 'Urgent Issue', message: 'Critical complaint filed for ORD-1024: Delivery Delay', type: 'complaint', severity: 'high', read: false, created_at: new Date().toISOString() },
-    { id: 2, receiver: 'partner@orderpilot.ai', title: 'Task Assigned', message: 'New critical task assigned for order ORD-1024', type: 'delivery', severity: 'high', read: false, created_at: new Date().toISOString() },
-    { id: 3, receiver: 'customer@orderpilot.ai', title: 'Order Update', message: 'OrderPilot AI has updated your order resolution timeline for ORD-1024', type: 'info', severity: 'medium', read: true, created_at: new Date().toISOString() }
+    { id: 1, receiver: 'partner@orderpilot.ai', title: 'Critical Task Escalation', message: 'Express re-delivery assigned for ORD-1024 (Indiranagar)', type: 'delivery', severity: 'critical', read: false, created_at: new Date().toISOString() },
+    { id: 2, receiver: 'partner@orderpilot.ai', title: 'Special Delivery Instructions', message: 'Recipient requested 15-min advance call for ORD-1027 (Ulsoor)', type: 'info', severity: 'high', read: false, created_at: new Date().toISOString() },
+    { id: 3, receiver: 'partner@orderpilot.ai', title: 'New Route Added', message: '3 new delivery tasks added to your daily schedule.', type: 'info', severity: 'normal', read: true, created_at: new Date().toISOString() }
   ],
   activity_logs: [
-    { id: 1, action: 'SYSTEM_INITIALIZATION', performed_by: 'System', details: { message: 'Database initialized with resilience fallback.' }, timestamp: new Date().toISOString() }
+    {
+      id: 1,
+      action: 'AI_ACTION_PLAN_GENERATED',
+      performed_by: 'PlanningAgent (AI)',
+      details: { complaintId: 'CMP-301', orderId: 'ORD-1024', summary: 'Customer experienced delivery failure due to missed SLA window.', actionPlan: 'Contact delivery partner Ravi Kumar and re-dispatch order before 6 PM today.' },
+      timestamp: new Date(Date.now() - 1800000).toISOString()
+    },
+    {
+      id: 2,
+      action: 'PRIORITY_EVALUATION_COMPLETED',
+      performed_by: 'PriorityAgent (AI)',
+      details: { complaintId: 'CMP-301', calculatedUrgency: 'critical', sentiment: 'frustrated', confidence: 0.98 },
+      timestamp: new Date(Date.now() - 3600000).toISOString()
+    },
+    {
+      id: 3,
+      action: 'AUTOMATED_TASK_ASSIGNED',
+      performed_by: 'TaskAssignmentAgent (AI)',
+      details: { taskId: 'TASK-106', partnerId: 3, partnerName: 'Ravi Kumar', orderId: 'ORD-1027', priority: 'high' },
+      timestamp: new Date(Date.now() - 5400000).toISOString()
+    },
+    {
+      id: 4,
+      action: 'CUSTOMER_NOTIFICATION_SENT',
+      performed_by: 'NotificationAgent (AI)',
+      details: { recipient: 'customer@orderpilot.ai', orderId: 'ORD-1024', channel: 'SMS/In-App', status: 'delivered' },
+      timestamp: new Date(Date.now() - 9000000).toISOString()
+    },
+    {
+      id: 5,
+      action: 'SYSTEM_INITIALIZATION',
+      performed_by: 'System',
+      details: { message: 'OrderPilot AI Enterprise Engine initialized with multi-agent coordination.' },
+      timestamp: new Date(Date.now() - 14400000).toISOString()
+    }
   ],
   ai_decisions: [
-    { id: 'AID-101', complaint_id: 'CMP-301', agent_name: 'ComplaintAnalysisAgent', reasoning: 'Detected severe delay on high priority order for customer gift requirement.', action_taken: 'Categorized as Delivery Delay with Frustrated sentiment.', confidence: 0.98, timestamp: new Date().toISOString() },
-    { id: 'AID-102', complaint_id: 'CMP-301', agent_name: 'PriorityAgent', reasoning: 'Delivery window elapsed >24 hours with negative sentiment.', action_taken: 'Assigned CRITICAL urgency level.', confidence: 0.95, timestamp: new Date().toISOString() },
-    { id: 'AID-103', complaint_id: 'CMP-301', agent_name: 'PlanningAgent', reasoning: 'Order requires immediate re-route and partner priority contact.', action_taken: 'Generated 4-step dispatch execution plan.', confidence: 0.92, timestamp: new Date().toISOString() }
+    { id: 'AID-101', complaint_id: 'CMP-301', agent_name: 'ComplaintAnalysisAgent', reasoning: 'Detected severe delivery delay on high priority order for customer birthday requirement.', action_taken: 'Categorized as Delivery Delay with Frustrated sentiment.', confidence: 0.98, timestamp: new Date(Date.now() - 5400000).toISOString() },
+    { id: 'AID-102', complaint_id: 'CMP-301', agent_name: 'PriorityAgent', reasoning: 'Delivery window elapsed >24 hours with negative sentiment.', action_taken: 'Assigned CRITICAL urgency level.', confidence: 0.95, timestamp: new Date(Date.now() - 3600000).toISOString() },
+    { id: 'AID-103', complaint_id: 'CMP-301', agent_name: 'PlanningAgent', reasoning: 'Order requires immediate re-route and partner priority contact.', action_taken: 'Generated 4-step dispatch execution plan.', confidence: 0.92, timestamp: new Date(Date.now() - 1800000).toISOString() }
   ]
 };
 
@@ -244,7 +487,7 @@ async function executeQuery(text, params = []) {
     }
 
     if (lowerSql.includes('count(*)')) {
-      return { rows: [{ count: '3' }], rowCount: 1 };
+      return { rows: [{ count: String(mockDb.orders.length) }], rowCount: 1 };
     }
   }
 
@@ -342,7 +585,7 @@ async function executeQuery(text, params = []) {
       id: mockDb.activity_logs.length + 1,
       action: params[0],
       performed_by: params[1],
-      details: params[2],
+      details: typeof params[2] === 'string' ? JSON.parse(params[2]) : params[2],
       timestamp: new Date().toISOString()
     };
     mockDb.activity_logs.unshift(newLog);
