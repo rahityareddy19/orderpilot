@@ -41,7 +41,8 @@ const getMockResponse = (config) => {
   if (url.includes('/dashboard/approvals')) return Promise.resolve({ data: { approvalRequests: complaints.filter(c => c.requiresApproval && c.status === 'open') } });
   
   // Partner dashboard routes
-  if (url.includes('/tasks/my-tasks') || url.includes('/dashboard/partner-tasks')) return Promise.resolve({ data: { tasks: partnerTasks } });
+  if (url.includes('/tasks') && config.method === 'patch') return Promise.resolve({ data: { task: { id: url.split('/')[2], status: 'updated' } } });
+  if (url.endsWith('/tasks') || url.includes('/tasks/my-tasks') || url.includes('/dashboard/partner-tasks')) return Promise.resolve({ data: { tasks: partnerTasks } });
   
   // General Data routes
   if (url.includes('/orders')) return Promise.resolve({ data: { orders } });
