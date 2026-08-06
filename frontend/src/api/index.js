@@ -51,7 +51,19 @@ const getMockResponse = (config) => {
     if (found) return Promise.resolve({ data: { order: found } });
     return Promise.reject({ response: { status: 404, data: { error: 'Order not found' } } });
   }
-  if (url.includes('/orders')) return Promise.resolve({ data: { orders } });
+  if (url.includes('/orders')) {
+    if (config.method === 'post') {
+      const payload = JSON.parse(config.data || '{}');
+      const newOrder = {
+        ...payload,
+        id: payload.id || `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+        status: 'processing',
+        placedAt: new Date().toISOString(),
+      };
+      return Promise.resolve({ data: { order: newOrder } });
+    }
+    return Promise.resolve({ data: { orders } });
+  }
   if (url.includes('/complaints')) return Promise.resolve({ data: { complaints } });
   if (url.includes('/activity-logs')) return Promise.resolve({ data: { logs: aiActions } });
 
