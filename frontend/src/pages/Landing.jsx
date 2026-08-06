@@ -65,8 +65,13 @@ export default function Landing() {
               </Button>
             </Link>
             <Link to="/login">
-              <Button size="sm">
+              <Button variant="ghost" size="sm">
                 Login
+              </Button>
+            </Link>
+            <Link to="/register">
+              <Button size="sm">
+                Sign Up
               </Button>
             </Link>
           </div>
@@ -97,7 +102,12 @@ export default function Landing() {
             </Link>
             <Link to="/login">
               <Button size="lg" icon={ArrowRight}>
-                Get Started
+                Login
+              </Button>
+            </Link>
+            <Link to="/register">
+              <Button size="lg" variant="secondary" icon={ArrowRight}>
+                Sign Up
               </Button>
             </Link>
           </div>
@@ -145,11 +155,18 @@ export default function Landing() {
           <p className="text-slate-600 mb-8">
             Try the demo dashboard to see how OrderPilot AI can transform your workflow.
           </p>
-          <Link to="/login">
-            <Button size="lg" icon={ChevronRight}>
-              Try the Demo
-            </Button>
-          </Link>
+          <div className="flex items-center justify-center gap-3">
+            <Link to="/login">
+              <Button size="lg" icon={ChevronRight}>
+                Login to Demo
+              </Button>
+            </Link>
+            <Link to="/register">
+              <Button size="lg" variant="secondary">
+                Create Account
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
