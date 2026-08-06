@@ -48,6 +48,23 @@ export function AppProvider({ children }) {
     }
   };
 
+  const register = async ({ name, email, password, role }) => {
+    try {
+      const res = await api.post('/auth/register', { name, email, password, role });
+      const { token: newToken, user: userData } = res.data;
+
+      setToken(newToken);
+      setUser(userData);
+      localStorage.setItem('orderpilot_token', newToken);
+      localStorage.setItem('orderpilot_user', JSON.stringify(userData));
+
+      return { success: true, user: userData };
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || 'Registration failed. Please try again.';
+      return { success: false, error: errorMsg };
+    }
+  };
+
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -57,7 +74,7 @@ export function AppProvider({ children }) {
 
   const registerPartner = async (partnerData) => {
     try {
-      const res = await api.post('/auth/create-partner', partnerData);
+      const res = await api.post('/auth/register', { ...partnerData, role: 'delivery_partner' });
       return { success: true, user: res.data.user };
     } catch (err) {
       const errorMsg = err.response?.data?.error || 'Failed to create delivery partner account.';
@@ -77,10 +94,16 @@ export function AppProvider({ children }) {
 
   const submitComplaint = async (complaintData) => {
     try {
-      const res = await api.post('/complaints', complaintData);
-      return { success: true, complaint: res.data.complaint };
+      // Trigger full multi-agent AI workflow backend
+      const res = await api.post('/ai/workflow', {
+        orderId: complaintData.orderId,
+        complaintText: complaintData.message,
+        customerId: user?.id || null
+      });
+
+      return { success: true, result: res.data.result, complaint: { id: res.data.result.complaintId, aiSummary: res.data.result.summary } };
     } catch (err) {
-      const errorMsg = err.response?.data?.error || 'Failed to submit complaint. Please check your Order ID.';
+      const errorMsg = err.response?.data?.error || 'Failed to process complaint. Please check your Order ID.';
       return { success: false, error: errorMsg };
     }
   };
@@ -97,6 +120,7 @@ export function AppProvider({ children }) {
         isAuthenticated,
         loading,
         login,
+        register,
         logout,
         registerPartner,
         fetchPartners,

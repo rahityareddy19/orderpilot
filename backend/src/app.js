@@ -7,21 +7,24 @@ const orderRoutes = require('./routes/orders');
 const complaintRoutes = require('./routes/complaints');
 const taskRoutes = require('./routes/tasks');
 const dashboardRoutes = require('./routes/dashboard');
+const notificationRoutes = require('./routes/notifications');
+const activityLogRoutes = require('./routes/activityLogs');
+const aiRoutes = require('./routes/ai');
 const errorHandler = require('./middleware/errorHandler');
+const { checkAndEscalateOverdue } = require('./agents/MonitoringAgent');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Enable CORS securely for Client URL or any local development origin
+// Enable CORS
 const allowedOrigin = process.env.CLIENT_URL || 'http://localhost:5173';
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, curl, or server-to-server)
     if (!origin) return callback(null, true);
     if (origin === allowedOrigin || origin.includes('localhost') || origin.includes('vercel.app')) {
       return callback(null, true);
     }
-    return callback(null, true); // Permissive in dev/test environment
+    return callback(null, true);
   },
   credentials: true
 }));
@@ -35,18 +38,26 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/activity-logs', activityLogRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Root route check
 app.get('/', (req, res) => {
-  res.json({ status: 'active', message: 'OrderPilot AI API Server is running' });
+  res.json({ status: 'active', message: 'OrderPilot AI Enterprise Multi-Agent Backend Server is running' });
 });
 
 // Error handling middleware
 app.use(errorHandler);
 
-// Start server
+// Start server and Periodic Monitoring Agent (every 5 minutes)
 app.listen(PORT, () => {
-  console.log(`OrderPilot AI backend server running on port ${PORT}`);
+  console.log(`OrderPilot AI Backend running on port ${PORT}`);
+  
+  // Run background monitoring task periodically
+  setInterval(() => {
+    checkAndEscalateOverdue();
+  }, 5 * 60 * 1000);
 });
 
 module.exports = app;
