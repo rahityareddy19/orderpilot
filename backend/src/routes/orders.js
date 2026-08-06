@@ -29,6 +29,8 @@ const updateStatusSchema = z.object({
 });
 
 function formatOrderResponse(row) {
+  if (!row) return null;
+
   let parsedItems = [];
   if (Array.isArray(row.items)) {
     parsedItems = row.items;
@@ -51,26 +53,42 @@ function formatOrderResponse(row) {
     }
   }
 
+  let customerName = 'Customer';
+  if (typeof row.customer === 'string') {
+    customerName = row.customer;
+  } else if (row.customer && typeof row.customer === 'object') {
+    customerName = row.customer.name || row.customer.email || 'Customer';
+  }
+
+  let partnerName = row.partner_name || row.partner || null;
+  if (row.deliveryPartner && typeof row.deliveryPartner === 'object') {
+    partnerName = row.deliveryPartner.name || partnerName;
+  }
+
   return {
     ...row,
-    id: row.id,
-    customer: row.customer,
-    address: row.address,
-    items: parsedItems,
-    status: row.status,
-    priority: row.priority,
-    partnerId: row.partner_id || row.delivery_partner_id,
-    partner_id: row.partner_id || row.delivery_partner_id,
-    partner: row.partner_name || row.partner || null,
-    partner_name: row.partner_name || row.partner || null,
-    estimatedDelivery: row.estimated_delivery || row.estimatedDelivery,
-    estimated_delivery: row.estimated_delivery || row.estimatedDelivery,
-    originalEstimate: row.original_estimate || row.originalEstimate,
-    original_estimate: row.original_estimate || row.originalEstimate,
-    placedAt: row.placed_at || row.created_at || row.placedAt,
-    placed_at: row.placed_at || row.created_at || row.placedAt,
+    id: row.id || row.order_number || 'ORD-UNKNOWN',
+    orderNumber: row.order_number || row.id,
+    customer: customerName,
+    customer_name: customerName,
+    customerObj: { name: customerName },
+    address: row.address || 'Address not specified',
+    items: Array.isArray(parsedItems) ? parsedItems : [],
+    status: row.status || 'processing',
+    priority: row.priority || 'normal',
+    partnerId: row.partner_id || row.delivery_partner_id || null,
+    partner_id: row.partner_id || row.delivery_partner_id || null,
+    partner: partnerName,
+    partner_name: partnerName,
+    deliveryPartner: { name: partnerName || 'Unassigned' },
+    estimatedDelivery: row.estimated_delivery || row.estimatedDelivery || null,
+    estimated_delivery: row.estimated_delivery || row.estimatedDelivery || null,
+    originalEstimate: row.original_estimate || row.originalEstimate || null,
+    original_estimate: row.original_estimate || row.originalEstimate || null,
+    placedAt: row.placed_at || row.created_at || row.placedAt || new Date().toISOString(),
+    placed_at: row.placed_at || row.created_at || row.placedAt || new Date().toISOString(),
     amount: parseFloat(row.amount || 0),
-    timeline: parsedTimeline,
+    timeline: Array.isArray(parsedTimeline) ? parsedTimeline : [],
     customerUpdate: row.customer_update || row.customerUpdate || null,
     customer_update: row.customer_update || row.customerUpdate || null
   };
@@ -139,6 +157,7 @@ router.post('/', authenticate, requireRole(['owner']), async (req, res, next) =>
       order: formatOrderResponse(result.rows[0])
     });
   } catch (error) {
+    console.error('POST /api/orders Error:', error);
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
     }
@@ -155,33 +174,34 @@ router.get('/', authenticate, async (req, res, next) => {
 
     if (userRole === 'owner') {
       result = await db.query(`
-        SELECT o.*, u.name as partner_name 
+        SELECT DISTINCT ON (o.id) o.*, u.name as partner_name 
         FROM orders o 
         LEFT JOIN users u ON (o.partner_id = u.id OR o.delivery_partner_id = u.id)
-        ORDER BY o.created_at DESC
+        ORDER BY o.id, o.created_at DESC
       `);
     } else if (userRole === 'customer') {
       result = await db.query(`
-        SELECT o.*, u.name as partner_name 
+        SELECT DISTINCT ON (o.id) o.*, u.name as partner_name 
         FROM orders o 
         LEFT JOIN users u ON (o.partner_id = u.id OR o.delivery_partner_id = u.id)
         WHERE o.customer_id = $1 OR o.customer = $2 OR o.customer = $3
-        ORDER BY o.created_at DESC
+        ORDER BY o.id, o.created_at DESC
       `, [userId, req.user.name, req.user.email]);
     } else {
       // Delivery Partner: only see orders assigned to their userId
       result = await db.query(`
-        SELECT o.*, u.name as partner_name 
+        SELECT DISTINCT ON (o.id) o.*, u.name as partner_name 
         FROM orders o 
         LEFT JOIN users u ON (o.partner_id = u.id OR o.delivery_partner_id = u.id)
         WHERE o.partner_id = $1 OR o.delivery_partner_id = $1
-        ORDER BY o.created_at DESC
+        ORDER BY o.id, o.created_at DESC
       `, [userId]);
     }
 
     const orders = result.rows.map(formatOrderResponse);
     res.json({ orders });
   } catch (error) {
+    console.error('GET /api/orders Error:', error);
     next(error);
   }
 });
@@ -190,16 +210,21 @@ router.get('/', authenticate, async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: 'Order ID is required' });
+    }
     
+    const uppercaseId = id.toUpperCase();
     const result = await db.query(`
-      SELECT o.*, u.name as partner_name 
+      SELECT DISTINCT ON (o.id) o.*, u.name as partner_name 
       FROM orders o 
       LEFT JOIN users u ON (o.partner_id = u.id OR o.delivery_partner_id = u.id)
-      WHERE o.id = $1
-    `, [id.toUpperCase()]);
+      WHERE o.id = $1 OR o.order_number = $1
+      LIMIT 1
+    `, [uppercaseId]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: `Order ${id.toUpperCase()} not found` });
+      return res.status(404).json({ error: `Order ${uppercaseId} not found` });
     }
 
     const rawOrder = result.rows[0];
@@ -221,8 +246,10 @@ router.get('/:id', async (req, res, next) => {
       }
     }
 
-    res.json({ order: formatOrderResponse(rawOrder) });
+    const formatted = formatOrderResponse(rawOrder);
+    res.json({ order: formatted });
   } catch (error) {
+    console.error(`GET /api/orders/${req.params.id} Error:`, error);
     next(error);
   }
 });
@@ -272,6 +299,7 @@ router.patch('/:id/status', authenticate, async (req, res, next) => {
       order: formatOrderResponse(updateResult.rows[0])
     });
   } catch (error) {
+    console.error(`PATCH /api/orders/${req.params.id}/status Error:`, error);
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
     }

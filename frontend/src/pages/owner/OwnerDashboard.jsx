@@ -95,12 +95,16 @@ export default function OwnerDashboard() {
 
   const formatTime = (ts) => {
     if (!ts) return '';
-    return new Date(ts).toLocaleString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    try {
+      return new Date(ts).toLocaleString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (e) {
+      return ts;
+    }
   };
 
   return (
@@ -312,26 +316,32 @@ export default function OwnerDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {recentOrders.map((order) => (
-                  <tr
-                    key={order.id}
-                    className="hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="px-5 py-3 font-medium text-slate-900">
-                      {order.id}
-                    </td>
-                    <td className="px-5 py-3 text-slate-600">{order.customer}</td>
-                    <td className="px-5 py-3">
-                      <StatusBadge status={order.status} />
-                    </td>
-                    <td className="px-5 py-3">
-                      <PriorityBadge priority={order.priority} />
-                    </td>
-                    <td className="px-5 py-3 text-right text-slate-900 font-medium">
-                      ₹{(order.amount || 0).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
+                {recentOrders.map((order) => {
+                  const customerName = typeof order?.customer === 'string'
+                    ? order.customer
+                    : (order?.customer?.name || order?.customerObj?.name || 'Customer');
+
+                  return (
+                    <tr
+                      key={order?.id}
+                      className="hover:bg-slate-50 transition-colors"
+                    >
+                      <td className="px-5 py-3 font-medium text-slate-900">
+                        {order?.id}
+                      </td>
+                      <td className="px-5 py-3 text-slate-600">{customerName}</td>
+                      <td className="px-5 py-3">
+                        <StatusBadge status={order?.status} />
+                      </td>
+                      <td className="px-5 py-3">
+                        <PriorityBadge priority={order?.priority} />
+                      </td>
+                      <td className="px-5 py-3 text-right text-slate-900 font-medium">
+                        ₹{(order?.amount || 0).toLocaleString()}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

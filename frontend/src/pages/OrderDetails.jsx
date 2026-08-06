@@ -26,18 +26,23 @@ export default function OrderDetails() {
   const [error, setError] = useState(null);
 
   const fetchOrder = async () => {
+    if (!orderId) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get(`/orders/${orderId}`);
+      const res = await api.get(`/orders/${orderId.trim()}`);
       if (res.data?.order) {
         setOrder(res.data.order);
       } else {
-        setError('Order not found');
+        setError(`Order ${orderId} not found`);
       }
     } catch (err) {
       console.error('Error fetching order:', err);
-      setError(err.response?.data?.error || `Could not find order ${orderId}`);
+      if (err.response?.status === 404) {
+        setError(`Order #${orderId} not found`);
+      } else {
+        setError(err.response?.data?.error || `Could not find order ${orderId}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -66,12 +71,16 @@ export default function OrderDetails() {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
-    return new Date(dateStr).toLocaleString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    try {
+      return new Date(dateStr).toLocaleString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (e) {
+      return dateStr;
+    }
   };
 
   if (loading) {
@@ -112,11 +121,11 @@ export default function OrderDetails() {
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-center max-w-sm">
             <Package className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <h2 className="text-lg font-semibold text-slate-900">Order not found</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Order Not Found</h2>
             <p className="text-sm text-slate-500 mt-1">{error || `We couldn't find order ${orderId}`}</p>
             <div className="mt-5 flex items-center justify-center gap-3">
               <Link to="/track-order">
-                <Button variant="secondary" size="sm">Try another ID</Button>
+                <Button variant="secondary" size="sm">Try another Order ID</Button>
               </Link>
             </div>
           </div>
@@ -125,9 +134,17 @@ export default function OrderDetails() {
     );
   }
 
-  const itemsList = Array.isArray(order.items) ? order.items : [];
-  const timelineEvents = Array.isArray(order.timeline) ? order.timeline : [];
-  const customerUpdateMsg = order.customerUpdate || order.customer_update;
+  const itemsList = Array.isArray(order?.items) ? order.items : [];
+  const timelineEvents = Array.isArray(order?.timeline) ? order.timeline : [];
+  const customerUpdateMsg = order?.customerUpdate || order?.customer_update;
+
+  const customerName = typeof order?.customer === 'string' 
+    ? order.customer 
+    : (order?.customer?.name || order?.customerObj?.name || 'Customer');
+
+  const partnerName = typeof order?.partner === 'string'
+    ? order.partner
+    : (order?.deliveryPartner?.name || order?.partner_name || 'Unassigned');
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -164,15 +181,15 @@ export default function OrderDetails() {
             <div className="flex items-start justify-between flex-wrap gap-4">
               <div>
                 <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-xl font-semibold text-slate-900">{order.id}</h1>
-                  <StatusBadge status={order.status} size="md" />
+                  <h1 className="text-xl font-semibold text-slate-900">{order?.id || orderId}</h1>
+                  <StatusBadge status={order?.status} size="md" />
                 </div>
-                <p className="text-sm text-slate-500">{itemsList.join(', ')}</p>
+                <p className="text-sm text-slate-500">{itemsList.join(', ') || 'No items listed'}</p>
               </div>
               <div className="text-right text-sm">
                 <p className="text-slate-500">Estimated Delivery</p>
                 <p className="font-medium text-slate-900">
-                  {order.estimatedDelivery ? new Date(order.estimatedDelivery).toLocaleDateString('en-IN', {
+                  {order?.estimatedDelivery ? new Date(order.estimatedDelivery).toLocaleDateString('en-IN', {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric',
@@ -184,17 +201,17 @@ export default function OrderDetails() {
             <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-slate-500">Customer</p>
-                <p className="font-medium text-slate-900">{order.customer}</p>
+                <p className="font-medium text-slate-900">{customerName}</p>
               </div>
               <div>
                 <p className="text-slate-500">Delivery Partner</p>
-                <p className="font-medium text-slate-900">{order.partner || order.partner_name || '—'}</p>
+                <p className="font-medium text-slate-900">{partnerName}</p>
               </div>
               <div className="col-span-2">
                 <p className="text-slate-500 flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5" /> Delivery Address
                 </p>
-                <p className="font-medium text-slate-900">{order.address}</p>
+                <p className="font-medium text-slate-900">{order?.address || 'Address not specified'}</p>
               </div>
             </div>
           </div>
@@ -222,20 +239,20 @@ export default function OrderDetails() {
               {timelineEvents.map((step, i) => (
                 <div key={i} className="flex gap-4">
                   <div className="flex flex-col items-center">
-                    {getTimelineIcon(step.status)}
+                    {getTimelineIcon(step?.status)}
                     {i < timelineEvents.length - 1 && (
                       <div className={`w-px flex-1 my-1 ${
-                        step.status === 'completed' ? 'bg-emerald-200' : 'bg-slate-200'
+                        step?.status === 'completed' ? 'bg-emerald-200' : 'bg-slate-200'
                       }`} />
                     )}
                   </div>
                   <div className="pb-6 flex-1">
                     <p className={`text-sm font-medium ${
-                      step.status === 'pending' ? 'text-slate-400' : 'text-slate-900'
+                      step?.status === 'pending' ? 'text-slate-400' : 'text-slate-900'
                     }`}>
-                      {step.event}
+                      {step?.event}
                     </p>
-                    {step.time && (
+                    {step?.time && (
                       <p className="text-xs text-slate-500 mt-0.5">{formatDate(step.time)}</p>
                     )}
                   </div>
@@ -257,7 +274,7 @@ export default function OrderDetails() {
             <Button
               variant="secondary"
               icon={MessageSquareWarning}
-              onClick={() => navigate('/report-issue', { state: { orderId: order.id } })}
+              onClick={() => navigate('/report-issue', { state: { orderId: order?.id } })}
             >
               Report an Issue
             </Button>
