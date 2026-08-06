@@ -451,17 +451,17 @@ async function executeQuery(text, params = []) {
     }
 
     if (lowerSql.includes('from orders')) {
-      if (lowerSql.includes('where o.id = $1') || lowerSql.includes('where id = $1') || lowerSql.includes('o.order_number = $1')) {
+      if (/o\.id\s*=\s*\$1/i.test(sql) || /id\s*=\s*\$1/i.test(sql) || /o\.order_number\s*=\s*\$1/i.test(sql)) {
         const idParam = (params[0] || '').toUpperCase();
         const found = mockDb.orders.filter(o => o.id.toUpperCase() === idParam || o.order_number === idParam);
         return { rows: found, rowCount: found.length };
       }
-      if (lowerSql.includes('where o.partner_id = $1') || lowerSql.includes('o.delivery_partner_id = $1')) {
+      if (/o\.partner_id\s*=\s*\$1/i.test(sql) || /o\.delivery_partner_id\s*=\s*\$1/i.test(sql)) {
         const partnerId = parseInt(params[0], 10);
         const found = mockDb.orders.filter(o => o.partner_id === partnerId || o.delivery_partner_id === partnerId);
         return { rows: found, rowCount: found.length };
       }
-      if (lowerSql.includes('where o.customer_id = $1') || lowerSql.includes('o.customer = $2')) {
+      if (/o\.customer_id\s*=\s*\$1/i.test(sql) || /o\.customer\s*=\s*\$2/i.test(sql)) {
         const customerId = parseInt(params[0], 10);
         const customerName = params[1] || '';
         const customerEmail = params[2] || '';
@@ -472,12 +472,12 @@ async function executeQuery(text, params = []) {
     }
 
     if (lowerSql.includes('from complaints')) {
-      if (lowerSql.includes('where id = $1') || lowerSql.includes('where c.id = $1')) {
+      if (/id\s*=\s*\$1/i.test(sql) || /c\.id\s*=\s*\$1/i.test(sql)) {
         const idParam = params[0];
         const found = mockDb.complaints.filter(c => c.id === idParam);
         return { rows: found, rowCount: found.length };
       }
-      if (lowerSql.includes('where c.customer_id = $1') || lowerSql.includes('c.customer = $2')) {
+      if (/c\.customer_id\s*=\s*\$1/i.test(sql) || /c\.customer\s*=\s*\$2/i.test(sql)) {
         const customerId = parseInt(params[0], 10);
         const found = mockDb.complaints.filter(c => c.customer_id === customerId || c.customer === params[1]);
         return { rows: found, rowCount: found.length };
@@ -490,7 +490,7 @@ async function executeQuery(text, params = []) {
     }
 
     if (lowerSql.includes('from tasks')) {
-      if (lowerSql.includes('where t.partner_id = $1') || lowerSql.includes('t.assigned_to = $1')) {
+      if (/t\.partner_id\s*=\s*\$1/i.test(sql) || /t\.assigned_to\s*=\s*\$1/i.test(sql)) {
         const partnerId = parseInt(params[0], 10);
         const found = mockDb.tasks.filter(t => t.partner_id === partnerId || t.assigned_to === partnerId);
         return { rows: found, rowCount: found.length };
