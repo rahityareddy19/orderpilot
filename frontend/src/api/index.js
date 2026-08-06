@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+// Default to relative '/api' for single-port serving, or use VITE_API_BASE_URL if explicitly set
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -29,6 +30,7 @@ api.interceptors.response.use(
       const isPublicRoute = window.location.pathname.startsWith('/track-order') || 
                             window.location.pathname === '/' || 
                             window.location.pathname === '/login' ||
+                            window.location.pathname === '/register' ||
                             window.location.pathname === '/report-issue';
       if (!isPublicRoute) {
         localStorage.removeItem('orderpilot_token');

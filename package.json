@@ -2,9 +2,12 @@
   "name": "orderpilot-root",
   "version": "1.0.0",
   "private": true,
-  "description": "Root configuration for OrderPilot AI to easily manage frontend and backend",
+  "description": "Root configuration for OrderPilot AI single-port production and multi-agent development",
   "scripts": {
+    "postinstall": "npm run install:all",
     "install:all": "npm install --prefix frontend && npm install --prefix backend",
+    "build": "npm run build --prefix frontend",
+    "start": "node backend/src/app.js",
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:backend": "npm run dev --prefix backend",
     "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\""

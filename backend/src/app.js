@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -32,7 +34,7 @@ app.use(cors({
 // Body parsing
 app.use(express.json());
 
-// Routes
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/complaints', complaintRoutes);
@@ -42,17 +44,40 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/activity-logs', activityLogRoutes);
 app.use('/api/ai', aiRoutes);
 
-// Root route check
-app.get('/', (req, res) => {
-  res.json({ status: 'active', message: 'OrderPilot AI Enterprise Multi-Agent Backend Server is running' });
+// Health check endpoint for API
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'active', message: 'OrderPilot AI Backend API is running on single-port mode' });
 });
+
+// Serve frontend static build files if available
+const frontendDistPath = path.join(__dirname, '../../frontend/dist');
+
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
+
+  // SPA Catch-all Route: serve index.html for non-API routes to support React Router refresh
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(path.join(frontendDistPath, 'index.html'));
+  });
+} else {
+  app.get('/', (req, res) => {
+    res.json({ status: 'active', message: 'OrderPilot AI Backend Server is running. (Build frontend to enable single-port React app)' });
+  });
+}
 
 // Error handling middleware
 app.use(errorHandler);
 
 // Start server and Periodic Monitoring Agent (every 5 minutes)
 app.listen(PORT, () => {
-  console.log(`OrderPilot AI Backend running on port ${PORT}`);
+  console.log(`=======================================================`);
+  console.log(` OrderPilot AI Single-Port App running on Port ${PORT} `);
+  console.log(` Web Application: http://localhost:${PORT}`);
+  console.log(` API Endpoints:   http://localhost:${PORT}/api`);
+  console.log(`=======================================================`);
   
   // Run background monitoring task periodically
   setInterval(() => {
