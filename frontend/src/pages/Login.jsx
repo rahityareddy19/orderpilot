@@ -145,46 +145,48 @@ export default function Login() {
             </Button>
           </form>
 
+          {/* Customer Links */}
+          <div className="mt-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 text-sm">
+            <span className="text-slate-600 font-medium">New to OrderPilot?</span>
+            <div className="flex items-center gap-2">
+              <Link to="/register" className="px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg font-medium transition-colors">
+                Create Account
+              </Link>
+              <Link to="/track-order" className="px-3 py-1.5 bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200 rounded-lg font-medium transition-colors">
+                Track Order
+              </Link>
+            </div>
+          </div>
+
           {/* Quick Demo Fill Buttons */}
-          <div className="mt-6 text-center">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
-              Quick Demo Login Accounts
+          <div className="mt-8 text-center">
+            <p className="text-xs font-medium text-slate-400 mb-3">
+              Don't want to register? Use a demo account:
             </p>
             <div className="flex items-center justify-center gap-2 flex-wrap">
               <button
                 type="button"
                 onClick={() => handleQuickDemoLogin('owner@orderpilot.ai', 'Password123')}
-                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
+                className="text-[11px] font-medium px-3 py-1.5 rounded-full border border-slate-200 text-slate-500 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
               >
                 Owner Demo
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickDemoLogin('partner@orderpilot.ai', 'Password123')}
-                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                className="text-[11px] font-medium px-3 py-1.5 rounded-full border border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-all"
               >
                 Partner Demo
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickDemoLogin('customer@orderpilot.ai', 'Password123')}
-                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors font-sans"
+                className="text-[11px] font-medium px-3 py-1.5 rounded-full border border-slate-200 text-slate-500 hover:border-emerald-300 hover:text-emerald-600 hover:bg-emerald-50 transition-all"
               >
                 Customer Demo
               </button>
             </div>
           </div>
-
-          <p className="mt-6 text-center text-sm text-slate-500">
-            Customer without an account?{' '}
-            <Link to="/register" className="text-indigo-600 hover:text-indigo-700 font-medium">
-              Create an account
-            </Link>
-            {' '}or{' '}
-            <Link to="/track-order" className="text-indigo-600 hover:text-indigo-700 font-medium">
-              Track your order
-            </Link>
-          </p>
         </div>
       </div>
     </div>

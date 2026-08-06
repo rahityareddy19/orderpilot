@@ -94,20 +94,15 @@ export default function Landing() {
             OrderPilot AI helps small delivery businesses manage orders, resolve customer complaints, 
             and coordinate delivery partners — all with intelligent automation.
           </p>
-          <div className="mt-8 flex items-center justify-center gap-3">
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link to="/register">
+              <Button size="lg" icon={ArrowRight}>
+                Get Started
+              </Button>
+            </Link>
             <Link to="/track-order">
               <Button size="lg" variant="secondary" icon={Search}>
                 Track an Order
-              </Button>
-            </Link>
-            <Link to="/login">
-              <Button size="lg" icon={ArrowRight}>
-                Login
-              </Button>
-            </Link>
-            <Link to="/register">
-              <Button size="lg" variant="secondary" icon={ArrowRight}>
-                Sign Up
               </Button>
             </Link>
           </div>
