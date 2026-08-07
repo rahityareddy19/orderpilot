@@ -5,6 +5,7 @@ const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const jwt = require('jsonwebtoken');
 const { logActivity, logAIDecisions } = require('../agents/ActivityAgent');
+const { assignPartner } = require('../agents/TaskAssignmentAgent');
 
 const createOrderSchema = z.object({
   id: z.string().optional(),
@@ -144,11 +145,17 @@ router.post('/', authenticate, requireRole(['owner']), async (req, res, next) =>
 
     if (!finalPartnerId) {
       // Trigger Automatic AI Assignment Agent
-      const availablePartners = await db.query("SELECT id FROM users WHERE role = 'delivery_partner'");
+      const availablePartners = await db.query("SELECT id, name FROM users WHERE role = 'delivery_partner'");
       if (availablePartners.rows.length > 0) {
-        // Simple mock AI logic: pick a random partner or based on some load logic. Here we just pick one.
-        const selectedPartner = availablePartners.rows[Math.floor(Math.random() * availablePartners.rows.length)];
-        finalPartnerId = selectedPartner.id;
+        const orderData = {
+          customer: validated.customer,
+          address: validated.address,
+          items: validated.items,
+          priority: validated.priority
+        };
+        
+        const aiAssignment = await assignPartner(orderData, availablePartners.rows);
+        finalPartnerId = aiAssignment.partnerId || availablePartners.rows[0].id;
         
         await db.query('UPDATE orders SET partner_id = $1 WHERE id = $2', [finalPartnerId, orderId]);
         result.rows[0].partner_id = finalPartnerId;
@@ -156,9 +163,9 @@ router.post('/', authenticate, requireRole(['owner']), async (req, res, next) =>
         await logAIDecisions(
           orderId,
           'TaskAssignmentAgent',
-          `Order created without manual assignment. Automatically allocated to partner #${finalPartnerId} based on current load and proximity.`,
-          `Task created and assignment stored in database.`,
-          0.92
+          aiAssignment.reasoning,
+          `Task created and assignment stored in database for partner #${finalPartnerId}.`,
+          aiAssignment.confidence || 0.92
         );
       }
     }

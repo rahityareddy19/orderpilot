@@ -130,12 +130,10 @@ export default function Register() {
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Account Role *</label>
               <select
                 value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500"
+                disabled
+                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm bg-slate-50 text-slate-500 cursor-not-allowed focus:outline-none focus:ring-0"
               >
                 <option value="customer">Customer</option>
-                <option value="owner">Business Owner</option>
-                <option value="delivery_partner">Delivery Partner</option>
               </select>
             </div>
 
