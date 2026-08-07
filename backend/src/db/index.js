@@ -490,12 +490,25 @@ async function executeQuery(text, params = []) {
     }
 
     if (lowerSql.includes('from tasks')) {
+      const attachOrderDetails = (tasks) => {
+        return tasks.map(t => {
+          const order = mockDb.orders.find(o => o.id === t.order_id);
+          if (order) {
+            return { ...t, customer: order.customer, address: order.address, items: order.items, order_priority: order.priority };
+          }
+          return t;
+        });
+      };
+
       if (/t\.partner_id\s*=\s*\$1/i.test(sql) || /t\.assigned_to\s*=\s*\$1/i.test(sql)) {
         const partnerId = parseInt(params[0], 10);
         const found = mockDb.tasks.filter(t => t.partner_id === partnerId || t.assigned_to === partnerId);
-        return { rows: found, rowCount: found.length };
+        const enriched = attachOrderDetails(found);
+        return { rows: enriched, rowCount: enriched.length };
       }
-      return { rows: mockDb.tasks, rowCount: mockDb.tasks.length };
+      
+      const allEnriched = attachOrderDetails(mockDb.tasks);
+      return { rows: allEnriched, rowCount: allEnriched.length };
     }
 
     if (lowerSql.includes('from notifications')) {
