@@ -451,8 +451,8 @@ async function executeQuery(text, params = []) {
     }
 
     if (lowerSql.includes('from orders')) {
-      if (/o\.id\s*=\s*\$1/i.test(sql) || /id\s*=\s*\$1/i.test(sql) || /o\.order_number\s*=\s*\$1/i.test(sql)) {
-        const idParam = (params[0] || '').toUpperCase();
+      if (/o\.id\s*=\s*\$1/i.test(sql) || /(?<!_)id\s*=\s*\$1/i.test(sql) || /o\.order_number\s*=\s*\$1/i.test(sql)) {
+        const idParam = String(params[0] || '').toUpperCase();
         const found = mockDb.orders.filter(o => o.id.toUpperCase() === idParam || o.order_number === idParam);
         return { rows: found, rowCount: found.length };
       }
@@ -472,7 +472,7 @@ async function executeQuery(text, params = []) {
     }
 
     if (lowerSql.includes('from complaints')) {
-      if (/id\s*=\s*\$1/i.test(sql) || /c\.id\s*=\s*\$1/i.test(sql)) {
+      if (/(?<!_)id\s*=\s*\$1/i.test(sql) || /c\.id\s*=\s*\$1/i.test(sql)) {
         const idParam = params[0];
         const found = mockDb.complaints.filter(c => c.id === idParam);
         return { rows: found, rowCount: found.length };
