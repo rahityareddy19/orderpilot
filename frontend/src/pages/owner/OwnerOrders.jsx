@@ -9,9 +9,10 @@ import Button from '../../components/Button';
 import Input from '../../components/Input';
 
 export default function OwnerOrders() {
-  const { fetchPartners } = useApp();
+  const { fetchPartners, fetchCustomers } = useApp();
   const [orders, setOrders] = useState([]);
   const [partners, setPartners] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -21,7 +22,7 @@ export default function OwnerOrders() {
   const [showModal, setShowModal] = useState(false);
   const [newOrder, setNewOrder] = useState({
     id: '',
-    customer: '',
+    customerId: '',
     address: '',
     items: '',
     amount: '',
@@ -35,12 +36,14 @@ export default function OwnerOrders() {
   const loadOrdersAndPartners = async () => {
     setLoading(true);
     try {
-      const [ordersRes, partnersList] = await Promise.all([
+      const [ordersRes, partnersList, customersList] = await Promise.all([
         api.get('/orders'),
-        fetchPartners()
+        fetchPartners(),
+        fetchCustomers()
       ]);
       setOrders(ordersRes.data?.orders || []);
       setPartners(partnersList || []);
+      setCustomers(customersList || []);
     } catch (err) {
       console.error('Error loading orders:', err);
     } finally {
@@ -54,7 +57,7 @@ export default function OwnerOrders() {
 
   const handleCreateOrder = async (e) => {
     e.preventDefault();
-    if (!newOrder.customer || !newOrder.address || !newOrder.items || !newOrder.amount) {
+    if (!newOrder.customerId || !newOrder.address || !newOrder.items || !newOrder.amount) {
       setModalError('Please fill in all required fields.');
       return;
     }
@@ -65,7 +68,7 @@ export default function OwnerOrders() {
     try {
       const payload = {
         id: newOrder.id ? newOrder.id.trim().toUpperCase() : undefined,
-        customer: newOrder.customer.trim(),
+        customerId: parseInt(newOrder.customerId, 10),
         address: newOrder.address.trim(),
         items: newOrder.items.split(',').map(s => s.trim()).filter(Boolean),
         amount: parseFloat(newOrder.amount),
@@ -78,7 +81,7 @@ export default function OwnerOrders() {
         if (res.data?.order) {
           setOrders(orders.map(o => o.id === res.data.order.id ? res.data.order : o));
           setShowModal(false);
-          setNewOrder({ id: '', customer: '', address: '', items: '', amount: '', priority: 'normal', partnerId: '' });
+          setNewOrder({ id: '', customerId: '', address: '', items: '', amount: '', priority: 'normal', partnerId: '' });
           setIsEditing(false);
           setSuccessMessage('Order updated successfully!');
           setTimeout(() => setSuccessMessage(''), 5000);
@@ -88,7 +91,7 @@ export default function OwnerOrders() {
         if (res.data?.order) {
           setOrders([res.data.order, ...orders]);
           setShowModal(false);
-          setNewOrder({ id: '', customer: '', address: '', items: '', amount: '', priority: 'normal', partnerId: '' });
+          setNewOrder({ id: '', customerId: '', address: '', items: '', amount: '', priority: 'normal', partnerId: '' });
           setSuccessMessage('Order created successfully! The AI assignment workflow has been triggered.');
           setTimeout(() => setSuccessMessage(''), 5000);
         }
@@ -103,7 +106,7 @@ export default function OwnerOrders() {
   const handleEditClick = (order) => {
     setNewOrder({
       id: order.id,
-      customer: order.customer,
+      customerId: order.customerId || order.customer_id || '',
       address: order.address || '',
       items: Array.isArray(order.items) ? order.items.join(', ') : order.items,
       amount: order.amount,
@@ -162,7 +165,7 @@ export default function OwnerOrders() {
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
             </button>
-            <Button icon={Plus} size="sm" onClick={() => { setIsEditing(false); setNewOrder({ id: '', customer: '', address: '', items: '', amount: '', priority: 'normal', partnerId: '' }); setShowModal(true); }}>
+            <Button icon={Plus} size="sm" onClick={() => { setIsEditing(false); setNewOrder({ id: '', customerId: '', address: '', items: '', amount: '', priority: 'normal', partnerId: '' }); setShowModal(true); }}>
               Add Order
             </Button>
           </div>
@@ -337,13 +340,22 @@ export default function OwnerOrders() {
                 disabled={isEditing}
               />
 
-              <Input
-                label="Customer Name *"
-                placeholder="e.g. Rahul Sharma"
-                value={newOrder.customer}
-                onChange={(e) => setNewOrder({ ...newOrder, customer: e.target.value })}
-                required
-              />
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Customer Name *</label>
+                <select
+                  value={newOrder.customerId}
+                  onChange={(e) => setNewOrder({ ...newOrder, customerId: e.target.value })}
+                  className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm bg-white"
+                  required
+                >
+                  <option value="">Select a customer</option>
+                  {customers.map((c) => (
+                    <option key={c.id || c.userId} value={c.id || c.userId}>
+                      {c.name} ({c.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               <Input
                 label="Delivery Address *"

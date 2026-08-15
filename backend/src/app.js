@@ -16,7 +16,7 @@ const errorHandler = require('./middleware/errorHandler');
 const { checkAndEscalateOverdue } = require('./agents/MonitoringAgent');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Enable CORS
 const allowedOrigin = process.env.CLIENT_URL || 'http://localhost:5173';
@@ -72,7 +72,7 @@ if (fs.existsSync(frontendDistPath)) {
 app.use(errorHandler);
 
 // Start server and Periodic Monitoring Agent (every 5 minutes)
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`=======================================================`);
   console.log(` OrderPilot AI Single-Port App running on Port ${PORT} `);
   console.log(` Web Application: http://localhost:${PORT}`);
@@ -83,6 +83,16 @@ app.listen(PORT, () => {
   setInterval(() => {
     checkAndEscalateOverdue();
   }, 5 * 60 * 1000);
+});
+
+server.on('error', (e) => {
+  if (e.code === 'EADDRINUSE') {
+    console.error(`\n❌ ERROR: Port ${PORT} is already in use.`);
+    console.error(`❌ Please check if another backend instance is running, or change the PORT in your .env file.\n`);
+    process.exit(1);
+  } else {
+    console.error('Server error:', e);
+  }
 });
 
 module.exports = app;

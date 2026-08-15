@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { History, Shield, RefreshCw, Loader2 } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Shield, RefreshCw, Loader2 } from 'lucide-react';
 import api from '../../api';
 import Header from '../../components/Header';
 
@@ -7,7 +7,7 @@ export default function ActivityTimeline() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get('/activity-logs');
@@ -17,11 +17,11 @@ export default function ActivityTimeline() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchLogs();
-  }, []);
+  }, [fetchLogs]);
 
   const formatDate = (ts) => {
     if (!ts) return '—';

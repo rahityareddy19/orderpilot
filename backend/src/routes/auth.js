@@ -187,4 +187,15 @@ router.get('/partners', authenticate, requireRole(['owner']), async (req, res, n
   }
 });
 
+// GET /api/auth/customers (Owner only)
+router.get('/customers', authenticate, requireRole(['owner']), async (_req, res, next) => {
+  try {
+    const result = await db.query("SELECT id, name, email, role, created_at FROM users WHERE role = 'customer'");
+    res.json({ customers: result.rows });
+  } catch (error) {
+    console.error('GET /api/auth/customers Error:', error);
+    next(error);
+  }
+});
+
 module.exports = router;

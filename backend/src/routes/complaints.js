@@ -137,9 +137,9 @@ router.get('/', authenticate, async (req, res, next) => {
       result = await db.query(`
         SELECT c.* 
         FROM complaints c
-        WHERE c.customer_id = $1 OR c.customer = $2 OR c.customer = $3
+        WHERE c.customer_id = $1
         ORDER BY c.created_at DESC
-      `, [userId, req.user.name, req.user.email]);
+      `, [userId]);
     } else {
       // Delivery partner
       result = await db.query(`

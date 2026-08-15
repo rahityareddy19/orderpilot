@@ -141,6 +141,16 @@ export function AppProvider({ children }) {
     }
   };
 
+  const fetchCustomers = async () => {
+    try {
+      const res = await api.get('/auth/customers');
+      return res.data.customers || [];
+    } catch (err) {
+      console.error('Error fetching customers:', err);
+      return [];
+    }
+  };
+
   const submitComplaint = async (complaintData) => {
     try {
       const res = await api.post('/ai/workflow', {
@@ -182,6 +192,7 @@ export function AppProvider({ children }) {
         logout,
         registerPartner,
         fetchPartners,
+        fetchCustomers,
         submitComplaint,
       }}
     >

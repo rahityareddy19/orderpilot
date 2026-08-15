@@ -4,7 +4,7 @@ const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 
 // GET /api/dashboard/stats (Owner only)
-router.get('/stats', authenticate, requireRole(['owner']), async (req, res, next) => {
+router.get('/stats', authenticate, requireRole(['owner']), async (_req, res, next) => {
   try {
     const totalOrdersRes = await db.query('SELECT COUNT(*) FROM orders');
     const delayedOrdersRes = await db.query("SELECT COUNT(*) FROM orders WHERE status = 'delayed'");
@@ -25,7 +25,7 @@ router.get('/stats', authenticate, requireRole(['owner']), async (req, res, next
 });
 
 // GET /api/dashboard/urgent-issues (Owner only)
-router.get('/urgent-issues', authenticate, requireRole(['owner']), async (req, res, next) => {
+router.get('/urgent-issues', authenticate, requireRole(['owner']), async (_req, res, next) => {
   try {
     const result = await db.query(`
       SELECT id, title, type, severity 
@@ -41,7 +41,7 @@ router.get('/urgent-issues', authenticate, requireRole(['owner']), async (req, r
 });
 
 // GET /api/dashboard/ai-activity (Owner only)
-router.get('/ai-activity', authenticate, requireRole(['owner']), async (req, res, next) => {
+router.get('/ai-activity', authenticate, requireRole(['owner']), async (_req, res, next) => {
   try {
     const result = await db.query(`
       SELECT id, action, type, timestamp, related_to as "relatedTo"
@@ -57,7 +57,7 @@ router.get('/ai-activity', authenticate, requireRole(['owner']), async (req, res
 });
 
 // GET /api/dashboard/approvals (Owner only)
-router.get('/approvals', authenticate, requireRole(['owner']), async (req, res, next) => {
+router.get('/approvals', authenticate, requireRole(['owner']), async (_req, res, next) => {
   try {
     const result = await db.query(`
       SELECT id, order_id as "orderId", customer, issue_type as "issueType", message, urgency, ai_summary as "aiSummary", ai_suggestion as "aiSuggestion", created_at as "createdAt"

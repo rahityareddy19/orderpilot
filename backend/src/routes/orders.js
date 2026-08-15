@@ -9,7 +9,7 @@ const { assignPartner } = require('../agents/TaskAssignmentAgent');
 
 const createOrderSchema = z.object({
   id: z.string().optional(),
-  customer: z.string().min(2, 'Customer name is required'),
+  customerId: z.coerce.number().min(1, 'Customer ID is required'),
   address: z.string().min(5, 'Delivery address is required'),
   items: z.union([z.array(z.string()), z.string()]).transform(val => {
     if (typeof val === 'string') {
@@ -71,6 +71,8 @@ function formatOrderResponse(row) {
     ...row,
     id: row.id || row.order_number || 'ORD-UNKNOWN',
     orderNumber: row.order_number || row.id,
+    customerId: row.customer_id,
+    customer_id: row.customer_id,
     customer: customerName,
     customer_name: customerName,
     customerObj: { name: customerName },
@@ -116,8 +118,12 @@ router.post('/', authenticate, requireRole(['owner']), async (req, res, next) =>
       { time: new Date().toISOString(), event: 'Payment confirmed', status: 'completed' }
     ];
 
-    const userRes = await db.query("SELECT id FROM users WHERE name = $1 AND role = 'customer' LIMIT 1", [validated.customer.trim()]);
-    const customerId = userRes.rows.length > 0 ? userRes.rows[0].id : null;
+    const userRes = await db.query("SELECT id, name FROM users WHERE id = $1 AND role = 'customer' LIMIT 1", [validated.customerId]);
+    if (userRes.rows.length === 0) {
+      return res.status(400).json({ error: 'Selected customer not found or invalid' });
+    }
+    const customerId = userRes.rows[0].id;
+    const customerName = userRes.rows[0].name;
 
     const result = await db.query(`
       INSERT INTO orders (
@@ -127,7 +133,7 @@ router.post('/', authenticate, requireRole(['owner']), async (req, res, next) =>
       RETURNING *
     `, [
       orderId,
-      validated.customer,
+      customerName,
       validated.address,
       JSON.stringify(validated.items),
       'processing',
@@ -148,7 +154,7 @@ router.post('/', authenticate, requireRole(['owner']), async (req, res, next) =>
       const availablePartners = await db.query("SELECT id, name FROM users WHERE role = 'delivery_partner'");
       if (availablePartners.rows.length > 0) {
         const orderData = {
-          customer: validated.customer,
+          customer: customerName,
           address: validated.address,
           items: validated.items,
           priority: validated.priority
@@ -182,7 +188,7 @@ router.post('/', authenticate, requireRole(['owner']), async (req, res, next) =>
         'pending',
         validated.priority,
         new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        `Initial delivery task for ${validated.customer}`
+        `Initial delivery task for ${customerName}`
       ]);
 
       // Notify Delivery Partner
@@ -225,8 +231,12 @@ router.put('/:id', authenticate, requireRole(['owner']), async (req, res, next) 
 
     const partnerId = validated.partner_id || validated.partnerId || null;
 
-    const userRes = await db.query("SELECT id FROM users WHERE name = $1 AND role = 'customer' LIMIT 1", [validated.customer.trim()]);
-    const customerId = userRes.rows.length > 0 ? userRes.rows[0].id : null;
+    const userRes = await db.query("SELECT id, name FROM users WHERE id = $1 AND role = 'customer' LIMIT 1", [validated.customerId]);
+    if (userRes.rows.length === 0) {
+      return res.status(400).json({ error: 'Selected customer not found or invalid' });
+    }
+    const customerId = userRes.rows[0].id;
+    const customerName = userRes.rows[0].name;
 
     const result = await db.query(`
       UPDATE orders SET 
@@ -235,7 +245,7 @@ router.put('/:id', authenticate, requireRole(['owner']), async (req, res, next) 
       WHERE id = $8
       RETURNING *
     `, [
-      validated.customer,
+      customerName,
       validated.address,
       JSON.stringify(validated.items),
       validated.priority,
@@ -298,9 +308,9 @@ router.get('/', authenticate, async (req, res, next) => {
         SELECT DISTINCT ON (o.id) o.*, u.name as partner_name 
         FROM orders o 
         LEFT JOIN users u ON (o.partner_id = u.id OR o.delivery_partner_id = u.id)
-        WHERE o.customer_id = $1 OR o.customer = $2 OR o.customer = $3
+        WHERE o.customer_id = $1
         ORDER BY o.id, o.created_at DESC
-      `, [userId, req.user.name, req.user.email]);
+      `, [userId]);
     } else {
       // Delivery Partner: only see orders assigned to their userId
       result = await db.query(`
