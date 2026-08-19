@@ -178,12 +178,12 @@ export default function OwnerDashboard() {
                 <div key={req.id} className="bg-white/10 backdrop-blur-md rounded-lg p-4 border border-white/10 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between text-xs text-indigo-200 mb-1">
-                      <span>Order #{req.orderId} • {req.customer}</span>
+                      <span>Order #{req.orderId || req.order_id} • {req.customer}</span>
                       <PriorityBadge priority={req.urgency} />
                     </div>
-                    <p className="text-xs font-semibold text-white mb-2">Issue: {req.issueType}</p>
+                    <p className="text-xs font-semibold text-white mb-2">Issue: {req.issueType || req.issue_type}</p>
                     <p className="text-xs text-indigo-100 mb-3 bg-black/20 p-2 rounded">
-                      <strong className="text-indigo-200">AI Plan:</strong> {req.aiSuggestion}
+                      <strong className="text-indigo-200">AI Plan:</strong> {req.aiSuggestion || req.ai_suggestion}
                     </p>
                   </div>
                   <Button
