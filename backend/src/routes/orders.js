@@ -9,8 +9,7 @@ const { assignPartner } = require('../agents/TaskAssignmentAgent');
 
 const createOrderSchema = z.object({
   id: z.string().optional(),
-  customerId: z.coerce.number().min(1, 'Customer ID is required'),
-  address: z.string().min(5, 'Delivery address is required'),
+  phoneNumber: z.string().min(10, 'Phone number is required'),
   items: z.union([z.array(z.string()), z.string()]).transform(val => {
     if (typeof val === 'string') {
       return val.split(',').map(s => s.trim()).filter(Boolean);
@@ -76,6 +75,7 @@ function formatOrderResponse(row) {
     customer: customerName,
     customer_name: customerName,
     customerObj: { name: customerName },
+    customerPhone: row.customer_phone || row.phone_number || null,
     address: row.address || 'Address not specified',
     items: Array.isArray(parsedItems) ? parsedItems : [],
     status: row.status || 'processing',
@@ -118,12 +118,17 @@ router.post('/', authenticate, requireRole(['owner']), async (req, res, next) =>
       { time: new Date().toISOString(), event: 'Payment confirmed', status: 'completed' }
     ];
 
-    const userRes = await db.query("SELECT id, name FROM users WHERE id = $1 AND role = 'customer' LIMIT 1", [validated.customerId]);
+    const userRes = await db.query("SELECT id, name, address FROM users WHERE phone_number = $1 AND role = 'customer' LIMIT 1", [validated.phoneNumber]);
     if (userRes.rows.length === 0) {
-      return res.status(400).json({ error: 'Selected customer not found or invalid' });
+      return res.status(400).json({ error: 'No registered customer found for this phone number.' });
     }
     const customerId = userRes.rows[0].id;
     const customerName = userRes.rows[0].name;
+    const customerAddress = userRes.rows[0].address;
+
+    if (!customerAddress) {
+      return res.status(400).json({ error: 'Customer has no address saved in their profile.' });
+    }
 
     const result = await db.query(`
       INSERT INTO orders (
@@ -134,7 +139,7 @@ router.post('/', authenticate, requireRole(['owner']), async (req, res, next) =>
     `, [
       orderId,
       customerName,
-      validated.address,
+      customerAddress,
       JSON.stringify(validated.items),
       'processing',
       validated.priority,
@@ -155,7 +160,7 @@ router.post('/', authenticate, requireRole(['owner']), async (req, res, next) =>
       if (availablePartners.rows.length > 0) {
         const orderData = {
           customer: customerName,
-          address: validated.address,
+          address: customerAddress,
           items: validated.items,
           priority: validated.priority
         };
@@ -231,12 +236,13 @@ router.put('/:id', authenticate, requireRole(['owner']), async (req, res, next) 
 
     const partnerId = validated.partner_id || validated.partnerId || null;
 
-    const userRes = await db.query("SELECT id, name FROM users WHERE id = $1 AND role = 'customer' LIMIT 1", [validated.customerId]);
+    const userRes = await db.query("SELECT id, name, address FROM users WHERE phone_number = $1 AND role = 'customer' LIMIT 1", [validated.phoneNumber]);
     if (userRes.rows.length === 0) {
-      return res.status(400).json({ error: 'Selected customer not found or invalid' });
+      return res.status(400).json({ error: 'No registered customer found for this phone number.' });
     }
     const customerId = userRes.rows[0].id;
     const customerName = userRes.rows[0].name;
+    const newAddress = userRes.rows[0].address; // We copy it over if editing order
 
     const result = await db.query(`
       UPDATE orders SET 
@@ -246,7 +252,7 @@ router.put('/:id', authenticate, requireRole(['owner']), async (req, res, next) 
       RETURNING *
     `, [
       customerName,
-      validated.address,
+      newAddress,
       JSON.stringify(validated.items),
       validated.priority,
       validated.amount,
@@ -298,25 +304,28 @@ router.get('/', authenticate, async (req, res, next) => {
 
     if (userRole === 'owner') {
       result = await db.query(`
-        SELECT DISTINCT ON (o.id) o.*, u.name as partner_name 
+        SELECT DISTINCT ON (o.id) o.*, u.name as partner_name, cu.phone_number as customer_phone 
         FROM orders o 
         LEFT JOIN users u ON (o.partner_id = u.id OR o.delivery_partner_id = u.id)
+        LEFT JOIN users cu ON o.customer_id = cu.id
         ORDER BY o.id, o.created_at DESC
       `);
     } else if (userRole === 'customer') {
       result = await db.query(`
-        SELECT DISTINCT ON (o.id) o.*, u.name as partner_name 
+        SELECT DISTINCT ON (o.id) o.*, u.name as partner_name, cu.phone_number as customer_phone 
         FROM orders o 
         LEFT JOIN users u ON (o.partner_id = u.id OR o.delivery_partner_id = u.id)
+        LEFT JOIN users cu ON o.customer_id = cu.id
         WHERE o.customer_id = $1
         ORDER BY o.id, o.created_at DESC
       `, [userId]);
     } else {
       // Delivery Partner: only see orders assigned to their userId
       result = await db.query(`
-        SELECT DISTINCT ON (o.id) o.*, u.name as partner_name 
+        SELECT DISTINCT ON (o.id) o.*, u.name as partner_name, cu.phone_number as customer_phone 
         FROM orders o 
         LEFT JOIN users u ON (o.partner_id = u.id OR o.delivery_partner_id = u.id)
+        LEFT JOIN users cu ON o.customer_id = cu.id
         WHERE o.partner_id = $1 OR o.delivery_partner_id = $1
         ORDER BY o.id, o.created_at DESC
       `, [userId]);
@@ -340,9 +349,10 @@ router.get('/:id', async (req, res, next) => {
     
     const uppercaseId = id.toUpperCase();
     const result = await db.query(`
-      SELECT DISTINCT ON (o.id) o.*, u.name as partner_name 
+      SELECT DISTINCT ON (o.id) o.*, u.name as partner_name, cu.phone_number as customer_phone 
       FROM orders o 
       LEFT JOIN users u ON (o.partner_id = u.id OR o.delivery_partner_id = u.id)
+      LEFT JOIN users cu ON o.customer_id = cu.id
       WHERE o.id = $1 OR o.order_number = $1
       LIMIT 1
     `, [uppercaseId]);
@@ -427,6 +437,52 @@ router.patch('/:id/status', authenticate, async (req, res, next) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors[0].message });
     }
+    next(error);
+  }
+});
+
+// PATCH /api/orders/:id/address (Customer only)
+router.patch('/:id/address', authenticate, requireRole(['customer']), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { address } = req.body;
+    const userId = req.user.userId || req.user.id;
+
+    if (!address || address.trim().length < 5) {
+      return res.status(400).json({ error: 'Delivery address must be at least 5 characters long.' });
+    }
+
+    const orderResult = await db.query('SELECT * FROM orders WHERE id = $1', [id.toUpperCase()]);
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const order = orderResult.rows[0];
+
+    // Ensure customer owns this order
+    if (order.customer_id !== userId) {
+      return res.status(403).json({ error: 'Forbidden. You do not have permission to update this order.' });
+    }
+
+    // Editable statuses
+    const editableStatuses = ['processing', 'pending', 'confirmed'];
+    if (!editableStatuses.includes(order.status.toLowerCase())) {
+      return res.status(400).json({ error: 'This order is already being delivered or completed, so its address can no longer be changed.' });
+    }
+
+    const updateResult = await db.query(`
+      UPDATE orders 
+      SET address = $1 
+      WHERE id = $2 
+      RETURNING *
+    `, [address.trim(), id.toUpperCase()]);
+
+    res.json({
+      message: 'Order delivery address updated successfully',
+      order: formatOrderResponse(updateResult.rows[0])
+    });
+  } catch (error) {
+    console.error(`PATCH /api/orders/${req.params.id}/address Error:`, error);
     next(error);
   }
 });

@@ -24,11 +24,12 @@ if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('[YOUR-PASSWO
 // Enterprise Seeded Mock Database
 const mockDb = {
   users: [
-    { id: 1, name: 'Priya Customer', email: 'customer@orderpilot.ai', password: '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', role: 'customer' },
-    { id: 2, name: 'Business Owner', email: 'owner@orderpilot.ai', password: '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', role: 'owner' },
-    { id: 3, name: 'Ravi Kumar', email: 'partner@orderpilot.ai', password: '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', role: 'delivery_partner' },
-    { id: 4, name: 'Suresh Reddy', email: 'suresh@orderpilot.ai', password: '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', role: 'delivery_partner' },
-    { id: 5, name: 'Anish Sharma', email: 'anish@orderpilot.ai', password: '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', role: 'delivery_partner' }
+    { id: 1, name: 'Priya Customer', email: 'customer@orderpilot.ai', password: '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', phone_number: '9876543210', address: '12, 100ft Road, Indiranagar, Bangalore', role: 'customer' },
+    { id: 2, name: 'Business Owner', email: 'owner@orderpilot.ai', password: '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', phone_number: '9876543211', address: 'Owner Office, MG Road, Bangalore', role: 'owner' },
+    { id: 3, name: 'Ravi Kumar', email: 'partner@orderpilot.ai', password: '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', phone_number: '9876543212', address: 'Partner Hub, Bangalore', role: 'delivery_partner' },
+    { id: 4, name: 'Suresh Reddy', email: 'suresh@orderpilot.ai', password: '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', phone_number: '9876543213', address: 'Partner Hub, Bangalore', role: 'delivery_partner' },
+    { id: 5, name: 'Anish Sharma', email: 'anish@orderpilot.ai', password: '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', phone_number: '9876543214', address: 'Partner Hub, Bangalore', role: 'delivery_partner' },
+    { id: 6, name: 'Priya Sharma', email: 'priya2@orderpilot.ai', password: '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', phone_number: '9999900001', address: '77, JP Nagar 3rd Phase, Bangalore', role: 'customer' }
   ],
   orders: [
     {
@@ -53,6 +54,7 @@ const mockDb = {
         { time: '2026-08-05T14:30:00Z', event: 'SLA Window Missed - Heavy Traffic Corridor', status: 'issue' }
       ],
       customer_update: 'AI Pilot: Priority re-dispatch authorized by owner.',
+      customer_phone: '9876543210',
       placed_at: '2026-08-05T10:00:00Z',
       created_at: '2026-08-05T10:00:00Z'
     },
@@ -76,6 +78,7 @@ const mockDb = {
         { time: '2026-08-06T07:30:00Z', event: 'Order dispatched', status: 'completed' },
         { time: '2026-08-06T09:00:00Z', event: 'Out for express delivery', status: 'in-progress' }
       ],
+      customer_phone: '9876543210',
       placed_at: '2026-08-06T07:30:00Z',
       created_at: '2026-08-06T07:30:00Z'
     },
@@ -98,6 +101,7 @@ const mockDb = {
       timeline: [
         { time: '2026-08-06T08:15:00Z', event: 'Order verified & packed', status: 'completed' }
       ],
+      customer_phone: '9876543210',
       placed_at: '2026-08-06T08:15:00Z',
       created_at: '2026-08-06T08:15:00Z'
     },
@@ -120,6 +124,7 @@ const mockDb = {
       timeline: [
         { time: '2026-08-06T08:00:00Z', event: 'Order dispatched from warehouse', status: 'in-progress' }
       ],
+      customer_phone: '9876543210',
       placed_at: '2026-08-06T08:00:00Z',
       created_at: '2026-08-06T08:00:00Z'
     },
@@ -142,6 +147,7 @@ const mockDb = {
       timeline: [
         { time: '2026-08-06T09:45:00Z', event: 'Order scheduled for evening dispatch', status: 'completed' }
       ],
+      customer_phone: '9876543210',
       placed_at: '2026-08-06T09:45:00Z',
       created_at: '2026-08-06T09:45:00Z'
     },
@@ -165,6 +171,7 @@ const mockDb = {
         { time: '2026-08-05T08:00:00Z', event: 'Order placed', status: 'completed' },
         { time: '2026-08-05T11:30:00Z', event: 'Delivered to recipient', status: 'completed' }
       ],
+      customer_phone: '9876543210',
       placed_at: '2026-08-05T08:00:00Z',
       created_at: '2026-08-05T08:00:00Z'
     },
@@ -188,6 +195,7 @@ const mockDb = {
         { time: '2026-08-05T13:00:00Z', event: 'Dispatched for priority delivery', status: 'completed' },
         { time: '2026-08-05T15:45:00Z', event: 'Delivered & verified with OTP', status: 'completed' }
       ],
+      customer_phone: '9876543210',
       placed_at: '2026-08-05T13:00:00Z',
       created_at: '2026-08-05T13:00:00Z'
     }
@@ -433,6 +441,27 @@ async function executeQuery(text, params = []) {
 
     // --- Standard SELECT Queries ---
     if (lowerSql.includes('from users')) {
+      // Check by email OR phone_number (used in registration duplicate check)
+      if (lowerSql.includes('where email = $1 or phone_number = $2')) {
+        const emailParam = params[0]?.toLowerCase();
+        const phoneParam = params[1];
+        const found = mockDb.users.filter(u => u.email.toLowerCase() === emailParam || u.phone_number === phoneParam);
+        return { rows: found, rowCount: found.length };
+      }
+      // Check by phone_number (used in order creation)
+      if (lowerSql.includes('phone_number = $1') && lowerSql.includes('role =')) {
+        const phoneParam = params[0];
+        const roleParam = params[1]?.replace(/'/g, '') || 'customer';
+        const found = mockDb.users.filter(u => u.phone_number === phoneParam && u.role === roleParam);
+        return { rows: found, rowCount: found.length };
+      }
+      // Check phone_number uniqueness for profile update (phone_number = $1 AND id != $2)
+      if (lowerSql.includes('phone_number = $1') && lowerSql.includes('id != $2')) {
+        const phoneParam = params[0];
+        const excludeId = parseInt(params[1], 10);
+        const found = mockDb.users.filter(u => u.phone_number === phoneParam && u.id !== excludeId);
+        return { rows: found, rowCount: found.length };
+      }
       if (lowerSql.includes('where email =')) {
         const emailParam = params[0]?.toLowerCase();
         const found = mockDb.users.filter(u => u.email.toLowerCase() === emailParam);
@@ -445,6 +474,10 @@ async function executeQuery(text, params = []) {
       }
       if (lowerSql.includes("role = 'delivery_partner'")) {
         const found = mockDb.users.filter(u => u.role === 'delivery_partner');
+        return { rows: found, rowCount: found.length };
+      }
+      if (lowerSql.includes("role = 'customer'")) {
+        const found = mockDb.users.filter(u => u.role === 'customer');
         return { rows: found, rowCount: found.length };
       }
       return { rows: mockDb.users, rowCount: mockDb.users.length };
@@ -525,19 +558,52 @@ async function executeQuery(text, params = []) {
   }
 
   if (lowerSql.startsWith('insert into users')) {
-    const newUser = {
-      id: mockDb.users.length + 1,
-      name: params[0],
-      email: params[1],
-      password: params[2],
-      role: params[3],
-      created_at: new Date().toISOString()
-    };
+    // Determine field count from params length
+    // New format: (name, email, password, phone_number, address, role) = 6 params
+    // Old format: (name, email, password, role) = 4 params
+    let newUser;
+    if (params.length >= 6) {
+      newUser = {
+        id: mockDb.users.length + 1,
+        name: params[0],
+        email: params[1],
+        password: params[2],
+        phone_number: params[3],
+        address: params[4],
+        role: params[5],
+        created_at: new Date().toISOString()
+      };
+    } else if (params.length === 5) {
+      // (name, email, password, phone_number, role)
+      newUser = {
+        id: mockDb.users.length + 1,
+        name: params[0],
+        email: params[1],
+        password: params[2],
+        phone_number: params[3],
+        address: null,
+        role: params[4],
+        created_at: new Date().toISOString()
+      };
+    } else {
+      newUser = {
+        id: mockDb.users.length + 1,
+        name: params[0],
+        email: params[1],
+        password: params[2],
+        phone_number: null,
+        address: null,
+        role: params[3],
+        created_at: new Date().toISOString()
+      };
+    }
     mockDb.users.push(newUser);
     return { rows: [newUser], rowCount: 1 };
   }
 
   if (lowerSql.startsWith('insert into orders')) {
+    const customerId = params[12];
+    const customerUser = mockDb.users.find(u => u.id === customerId);
     const newOrder = {
       id: params[0],
       order_number: params[0],
@@ -553,7 +619,8 @@ async function executeQuery(text, params = []) {
       placed_at: params[9],
       amount: params[10],
       timeline: params[11],
-      customer_id: params[12]
+      customer_id: params[12],
+      customer_phone: customerUser?.phone_number || null
     };
     mockDb.orders.unshift(newOrder);
     return { rows: [newOrder], rowCount: 1 };
@@ -665,11 +732,26 @@ async function executeQuery(text, params = []) {
     return { rows: found ? [found] : [], rowCount: found ? 1 : 0 };
   }
 
+  if (lowerSql.startsWith('update users')) {
+    const id = params[params.length - 1];
+    const found = mockDb.users.find(u => u.id === parseInt(id, 10));
+    if (found) {
+      if (lowerSql.includes('phone_number = $1') && lowerSql.includes('address = $2')) {
+        found.phone_number = params[0];
+        found.address = params[1];
+      }
+    }
+    return { rows: found ? [found] : [], rowCount: found ? 1 : 0 };
+  }
+
   if (lowerSql.startsWith('update orders')) {
     const id = params[params.length - 1];
     const found = mockDb.orders.find(o => o.id === id || o.order_number === id);
     if (found) {
-      if (lowerSql.includes('customer = $1')) {
+      if (lowerSql.includes('address = $1') && !lowerSql.includes('customer =')) {
+        // Address-only patch
+        found.address = params[0];
+      } else if (lowerSql.includes('customer = $1')) {
         // Edit order query
         found.customer = params[0];
         found.address = params[1];
@@ -686,6 +768,10 @@ async function executeQuery(text, params = []) {
       } else {
         // Status update query
         found.status = params[0];
+        // Handle timeline update
+        if (params[1]) {
+          found.timeline = typeof params[1] === 'string' ? JSON.parse(params[1]) : params[1];
+        }
       }
     }
     return { rows: found ? [found] : [], rowCount: found ? 1 : 0 };

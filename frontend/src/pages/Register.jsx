@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Bot, UserPlus, Mail, KeyRound, User, AlertCircle, Loader2 } from 'lucide-react';
+import { Bot, UserPlus, Mail, KeyRound, User, Phone, MapPin, AlertCircle, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
@@ -13,6 +13,8 @@ export default function Register() {
     name: '',
     email: '',
     password: '',
+    phone_number: '',
+    address: '',
     role: 'customer'
   });
   const [error, setError] = useState('');
@@ -20,7 +22,7 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.password) {
+    if (!formData.name || !formData.email || !formData.password || !formData.phone_number || !formData.address) {
       setError('Please fill in all required fields.');
       return;
     }
@@ -122,6 +124,33 @@ export default function Register() {
                 placeholder="At least 6 characters"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="phone_number" className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-1.5">
+                <Phone className="w-4 h-4 text-slate-400" /> Phone Number *
+              </label>
+              <Input
+                id="phone_number"
+                type="tel"
+                placeholder="e.g. 9876543210"
+                value={formData.phone_number}
+                onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="address" className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 text-slate-400" /> Delivery Address *
+              </label>
+              <Input
+                id="address"
+                placeholder="e.g. 12, Indiranagar, Bangalore"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 required
               />
             </div>

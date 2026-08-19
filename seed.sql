@@ -2,17 +2,19 @@
 -- Run this script in your Supabase SQL Editor after running schema.sql
 
 -- 1. Insert Users (Password is 'Password123' encrypted with bcrypt)
-INSERT INTO users (id, name, email, password, role)
+INSERT INTO users (id, name, email, password, phone_number, address, role)
 VALUES 
-  (1, 'Priya Customer', 'customer@orderpilot.ai', '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', 'customer'),
-  (2, 'Business Owner', 'owner@orderpilot.ai', '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', 'owner'),
-  (3, 'Ravi Kumar', 'partner@orderpilot.ai', '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', 'delivery_partner'),
-  (4, 'Suresh Reddy', 'suresh@orderpilot.ai', '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', 'delivery_partner'),
-  (5, 'Anish Sharma', 'anish@orderpilot.ai', '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', 'delivery_partner')
+  (1, 'Priya Customer', 'customer@orderpilot.ai', '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', '9876543210', '12, 100ft Road, Indiranagar, Bangalore', 'customer'),
+  (2, 'Business Owner', 'owner@orderpilot.ai', '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', '9876543211', 'Owner Office, MG Road, Bangalore', 'owner'),
+  (3, 'Ravi Kumar', 'partner@orderpilot.ai', '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', '9876543212', 'Partner Hub, Bangalore', 'delivery_partner'),
+  (4, 'Suresh Reddy', 'suresh@orderpilot.ai', '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', '9876543213', 'Partner Hub, Bangalore', 'delivery_partner'),
+  (5, 'Anish Sharma', 'anish@orderpilot.ai', '$2b$10$kowd2V2zMpxHvhvTzUDzeejUvpo92sghou1EOENFMdN37hLPjVtRG', '9876543214', 'Partner Hub, Bangalore', 'delivery_partner')
 ON CONFLICT (id) DO UPDATE SET 
   name = EXCLUDED.name,
   email = EXCLUDED.email,
   password = EXCLUDED.password,
+  phone_number = EXCLUDED.phone_number,
+  address = EXCLUDED.address,
   role = EXCLUDED.role;
 
 -- Reset sequence for users table

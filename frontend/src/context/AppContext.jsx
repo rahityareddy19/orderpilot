@@ -87,9 +87,9 @@ export function AppProvider({ children }) {
     }
   };
 
-  const register = async ({ name, email, password, role }) => {
+  const register = async ({ name, email, password, phone_number, address, role }) => {
     try {
-      const res = await api.post('/auth/register', { name, email, password, role });
+      const res = await api.post('/auth/register', { name, email, password, phone_number, address, role });
       const { token: newToken, user: userData } = res.data;
 
       setToken(newToken);
@@ -99,14 +99,8 @@ export function AppProvider({ children }) {
 
       return { success: true, user: userData };
     } catch (err) {
-      const cleanEmail = email ? email.trim().toLowerCase() : '';
-      const fallbackUser = { userId: Date.now(), id: Date.now(), name, email: cleanEmail, role: role || 'customer' };
-      const fallbackToken = 'demo_fallback_jwt_token_' + Date.now();
-      setToken(fallbackToken);
-      setUser(fallbackUser);
-      localStorage.setItem('orderpilot_token', fallbackToken);
-      localStorage.setItem('orderpilot_user', JSON.stringify(fallbackUser));
-      return { success: true, user: fallbackUser };
+      const errorMessage = err.response?.data?.error || 'Registration failed. Please try again.';
+      return { success: false, error: errorMessage };
     }
   };
 

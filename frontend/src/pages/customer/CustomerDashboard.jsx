@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Package, MessageSquareWarning, Search, Bot, ArrowRight, Loader2, RefreshCw, Send } from 'lucide-react';
+import { Package, MessageSquareWarning, Search, Bot, ArrowRight, Loader2, Send, User, CheckCircle2, AlertCircle } from 'lucide-react';
 import api from '../../api';
 import { useApp } from '../../context/AppContext';
 import Header from '../../components/Header';
@@ -10,7 +10,7 @@ import Button from '../../components/Button';
 import Input from '../../components/Input';
 
 export default function CustomerDashboard() {
-  const { user } = useApp();
+  const { user, login } = useApp();
   const navigate = useNavigate();
 
   const [orders, setOrders] = useState([]);
@@ -23,6 +23,23 @@ export default function CustomerDashboard() {
   ]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+
+  // Profile Edit State
+  const [profileData, setProfileData] = useState({
+    phone_number: user?.phone_number || '',
+    address: user?.address || ''
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState(null);
+
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        phone_number: user.phone_number || '',
+        address: user.address || ''
+      });
+    }
+  }, [user]);
 
   const fetchCustomerData = async () => {
     setLoading(true);
@@ -65,6 +82,27 @@ export default function CustomerDashboard() {
     }
   };
 
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    if (!profileData.phone_number || !profileData.address) return;
+    setSavingProfile(true);
+    setProfileMessage(null);
+    try {
+      const res = await api.put('/auth/me/profile', profileData);
+      setProfileMessage({ type: 'success', text: 'Profile updated successfully!' });
+      // Update local context
+      if (res.data?.user) {
+         // Assuming we can update localStorage directly for now or user will see it on refresh
+         localStorage.setItem('orderpilot_user', JSON.stringify(res.data.user));
+         window.location.reload(); // Simple way to sync context
+      }
+    } catch (err) {
+      setProfileMessage({ type: 'error', text: err.response?.data?.error || 'Failed to update profile.' });
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   return (
     <div>
       <Header
@@ -101,6 +139,42 @@ export default function CustomerDashboard() {
             color="blue"
             description="24/7 autonomous support"
           />
+        </div>
+
+        {/* Profile Settings */}
+        <div className="bg-white rounded-xl border border-slate-200">
+          <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+            <User className="w-4 h-4 text-indigo-500" />
+            <h2 className="text-sm font-semibold text-slate-900">My Profile Settings</h2>
+          </div>
+          <div className="p-5">
+            {profileMessage && (
+              <div className={`mb-4 p-3 rounded-lg text-xs flex items-center gap-2 ${profileMessage.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                {profileMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                <span>{profileMessage.text}</span>
+              </div>
+            )}
+            <form onSubmit={handleUpdateProfile} className="grid sm:grid-cols-2 gap-4">
+              <Input
+                label="Phone Number"
+                type="tel"
+                value={profileData.phone_number}
+                onChange={(e) => setProfileData({ ...profileData, phone_number: e.target.value })}
+                required
+              />
+              <Input
+                label="Saved Delivery Address"
+                value={profileData.address}
+                onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
+                required
+              />
+              <div className="sm:col-span-2 flex justify-end">
+                <Button type="submit" size="sm" disabled={savingProfile}>
+                  {savingProfile ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : 'Save Profile Changes'}
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
 
         {/* AI Assistant Chat + Orders Grid */}
