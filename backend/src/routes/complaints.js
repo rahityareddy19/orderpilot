@@ -175,6 +175,43 @@ router.patch('/:id/approve', authenticate, requireRole(['owner']), async (req, r
       RETURNING *
     `, [id]);
 
+    // Update associated tasks to 'in-progress'
+    await db.query(`
+      UPDATE tasks
+      SET status = 'in-progress'
+      WHERE complaint_id = $1
+    `, [id]);
+
+    // Update corresponding order status and timeline
+    const orderId = complaint.order_id || complaint.orderId;
+    if (orderId) {
+      const orderResult = await db.query('SELECT * FROM orders WHERE id = $1', [orderId]);
+      if (orderResult.rows.length > 0) {
+        const order = orderResult.rows[0];
+        let timeline = [];
+        if (order.timeline) {
+          try {
+            timeline = typeof order.timeline === 'string' ? JSON.parse(order.timeline) : (order.timeline || []);
+          } catch (e) {
+            timeline = [];
+          }
+        }
+        timeline.push({
+          time: new Date().toISOString(),
+          event: `AI Action Plan Approved: ${complaint.ai_suggestion || complaint.aiSuggestion || 'Action initiated'}`,
+          status: 'completed'
+        });
+
+        // Set status to in-transit if it was delayed or processing
+        const newStatus = (order.status === 'delayed' || order.status === 'processing') ? 'in-transit' : order.status;
+
+        await db.query(
+          'UPDATE orders SET status = $1, timeline = $2 WHERE id = $3',
+          [newStatus, JSON.stringify(timeline), orderId]
+        );
+      }
+    }
+
     res.json({
       message: 'Action plan approved and complaint marked resolved',
       complaint: formatComplaintResponse(updatedResult.rows[0])

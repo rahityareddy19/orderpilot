@@ -205,8 +205,9 @@ export default function OwnerDashboard() {
         {/* Urgent Issues + AI Activity */}
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Urgent Issues */}
-          <div className="bg-white rounded-xl border border-slate-200">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          {/* Urgent Issues */}
+          <div className="bg-white rounded-xl border border-slate-200 flex flex-col h-[420px]">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
               <h2 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-500" />
                 Urgent Issues & Notifications
@@ -215,7 +216,7 @@ export default function OwnerDashboard() {
                 {urgentIssues.length} items
               </span>
             </div>
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-slate-100 overflow-y-auto flex-1 scrollbar-thin">
               {urgentIssues.map((issue) => (
                 <div
                   key={issue.id}
@@ -231,14 +232,17 @@ export default function OwnerDashboard() {
                     {issue.type === 'performance' && <TrendingDown className="w-3.5 h-3.5" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-slate-900">{issue.title}</p>
-                    <PriorityBadge priority={issue.severity} />
+                    <p className="text-sm text-slate-900 font-medium leading-snug">{issue.title || issue.message}</p>
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <PriorityBadge priority={issue.severity} />
+                      <span className="text-[10px] text-slate-400">• {issue.type || 'notification'}</span>
+                    </div>
                   </div>
                 </div>
               ))}
 
               {urgentIssues.length === 0 && (
-                <div className="py-8 text-center text-slate-400 text-sm">
+                <div className="py-12 text-center text-slate-400 text-sm">
                   No urgent issues at this time.
                 </div>
               )}
@@ -246,14 +250,14 @@ export default function OwnerDashboard() {
           </div>
 
           {/* AI Activity Timeline */}
-          <div className="bg-white rounded-xl border border-slate-200">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="bg-white rounded-xl border border-slate-200 flex flex-col h-[420px]">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
               <h2 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                 <Zap className="w-4 h-4 text-indigo-500" />
                 Recent AI Activity
               </h2>
             </div>
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-slate-100 overflow-y-auto flex-1 scrollbar-thin">
               {aiActivity.map((action) => {
                 const ActionIcon = actionIcons[action.type] || Bot;
                 return (
@@ -265,8 +269,8 @@ export default function OwnerDashboard() {
                       <ActionIcon className="w-3.5 h-3.5 text-indigo-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-slate-700">{action.action}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">
+                      <p className="text-sm text-slate-700 leading-snug font-medium">{action.action}</p>
+                      <p className="text-xs text-slate-400 mt-1">
                         {formatTime(action.timestamp)}
                       </p>
                     </div>
@@ -275,7 +279,7 @@ export default function OwnerDashboard() {
               })}
 
               {aiActivity.length === 0 && (
-                <div className="py-8 text-center text-slate-400 text-sm">
+                <div className="py-12 text-center text-slate-400 text-sm">
                   No AI activity recorded yet.
                 </div>
               )}

@@ -7,7 +7,7 @@ async function checkAndEscalateOverdue() {
       SELECT t.*, c.customer_id, c.order_id
       FROM tasks t
       JOIN complaints c ON t.complaint_id = c.id
-      WHERE t.completed = false AND t.due_time < NOW()
+      WHERE t.completed = false AND t.due_time < NOW() AND c.status <> 'escalated'
     `);
 
     for (const task of overdueTasks.rows) {

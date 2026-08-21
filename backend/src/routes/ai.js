@@ -36,11 +36,17 @@ router.post('/workflow', async (req, res, next) => {
 // POST /api/ai/analyze
 router.post('/analyze', async (req, res, next) => {
   try {
-    const { orderId, complaintText } = req.body;
-    const orderRes = await db.query('SELECT * FROM orders WHERE id = $1', [orderId?.toUpperCase()]);
-    const order = orderRes.rows[0] || { id: orderId || 'ORD-GENERIC', customer: 'Customer', items: [] };
+    const { orderId, complaintText, orders } = req.body;
+    let targetInput = null;
 
-    const analysis = await analyzeComplaint(order, complaintText || '');
+    if (Array.isArray(orders) && orders.length > 0) {
+      targetInput = orders;
+    } else {
+      const orderRes = await db.query('SELECT * FROM orders WHERE id = $1', [orderId?.toUpperCase()]);
+      targetInput = orderRes.rows[0] ? [orderRes.rows[0]] : [{ id: orderId || 'ORD-GENERIC', customer: 'Customer', items: [] }];
+    }
+
+    const analysis = await analyzeComplaint(targetInput, complaintText || '');
     res.json({ analysis });
   } catch (error) {
     next(error);

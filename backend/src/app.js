@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
+const db = require('./db');
 
 const authRoutes = require('./routes/auth');
 const orderRoutes = require('./routes/orders');
@@ -79,6 +80,32 @@ const server = app.listen(PORT, () => {
   console.log(` API Endpoints:   http://localhost:${PORT}/api`);
   console.log(`=======================================================`);
   
+  // Run a one-time database cleanup for duplicates on startup
+  (async () => {
+    try {
+      console.log('Running startup database cleanup...');
+      const notifRes = await db.query(`
+        DELETE FROM notifications 
+        WHERE id NOT IN (
+          SELECT MAX(id) 
+          FROM notifications 
+          GROUP BY receiver, message, type
+        )
+      `);
+      const activityRes = await db.query(`
+        DELETE FROM activity_logs 
+        WHERE id NOT IN (
+          SELECT MAX(id) 
+          FROM activity_logs 
+          GROUP BY action, performed_by, (details->>'taskId'), (details->>'orderId'), (details->>'complaintId')
+        )
+      `);
+      console.log(`Startup database cleanup completed: Deleted ${notifRes.rowCount || 0} notifications, ${activityRes.rowCount || 0} activity logs.`);
+    } catch (err) {
+      console.error('Error during startup database cleanup:', err.message);
+    }
+  })();
+
   // Run background monitoring task periodically
   setInterval(() => {
     checkAndEscalateOverdue();

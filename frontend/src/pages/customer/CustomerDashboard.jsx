@@ -72,8 +72,12 @@ export default function CustomerDashboard() {
     setChatLoading(true);
 
     try {
-      const res = await api.post('/ai/analyze', { complaintText: userText, orderId: orders[0]?.id || 'ORD-1024' });
-      const summary = res.data?.analysis?.summary || 'I have analyzed your query and flagged it for your delivery team.';
+      const res = await api.post('/ai/analyze', { 
+        complaintText: userText, 
+        orderId: orders[0]?.id || 'ORD-1024',
+        orders: orders
+      });
+      const summary = res.data?.analysis?.customerReply || res.data?.analysis?.summary || 'I have analyzed your query and flagged it for your delivery team.';
       setChatMessages(prev => [...prev, { sender: 'ai', text: summary }]);
     } catch (err) {
       setChatMessages(prev => [...prev, { sender: 'ai', text: 'I have logged your request. You can also file a formal complaint using the Raise Complaint button below.' }]);

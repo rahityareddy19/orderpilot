@@ -53,6 +53,12 @@ async function executeAgentWorkflow(order, complaintText, customerId = null) {
 
   // 3. Planning Agent
   const plan = await createPlan(order, complaintText, analysis, priority);
+  await db.query(`
+    UPDATE complaints 
+    SET ai_suggestion = $1, requires_approval = $2
+    WHERE id = $3
+  `, [plan.ownerRecommendation, true, complaintId]);
+
   await logAIDecisions(
     complaintId,
     'PlanningAgent',

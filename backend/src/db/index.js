@@ -627,23 +627,46 @@ async function executeQuery(text, params = []) {
   }
 
   if (lowerSql.startsWith('insert into complaints')) {
-    const newComplaint = {
-      id: params[0],
-      order_id: params[1],
-      customer: params[2],
-      customer_id: params[2],
-      issue_type: params[3],
-      category: params[3],
-      message: params[4],
-      complaint_text: params[4],
-      status: params[5] || 'open',
-      urgency: params[6] || 'medium',
-      ai_summary: params[7],
-      ai_suggestion: params[8],
-      requires_approval: params[9] !== false,
-      approved: params[10] || false,
-      created_at: new Date().toISOString()
-    };
+    let newComplaint;
+    if (params.length === 9) {
+      const order = mockDb.orders.find(o => o.id === params[1] || o.order_number === params[1]);
+      newComplaint = {
+        id: params[0],
+        order_id: params[1],
+        customer: order ? order.customer : 'Customer',
+        customer_id: params[2],
+        complaint_text: params[3],
+        message: params[3],
+        category: params[4],
+        issue_type: params[4],
+        urgency: params[5] || 'medium',
+        sentiment: params[6] || 'frustrated',
+        ai_summary: params[7],
+        ai_suggestion: null,
+        requires_approval: true,
+        approved: false,
+        status: params[8] || 'open',
+        created_at: new Date().toISOString()
+      };
+    } else {
+      newComplaint = {
+        id: params[0],
+        order_id: params[1],
+        customer: params[2],
+        customer_id: params[2],
+        issue_type: params[3],
+        category: params[3],
+        message: params[4],
+        complaint_text: params[4],
+        status: params[5] || 'open',
+        urgency: params[6] || 'medium',
+        ai_summary: params[7],
+        ai_suggestion: params[8],
+        requires_approval: params[9] !== false,
+        approved: params[10] || false,
+        created_at: new Date().toISOString()
+      };
+    }
     mockDb.complaints.unshift(newComplaint);
     return { rows: [newComplaint], rowCount: 1 };
   }
@@ -718,11 +741,28 @@ async function executeQuery(text, params = []) {
       if (lowerSql.includes('urgency =')) {
         found.urgency = params[0];
       }
+      if (lowerSql.includes('ai_suggestion =')) {
+        found.ai_suggestion = params[0];
+        found.aiSuggestion = params[0];
+        if (params[1] !== undefined) {
+          found.requires_approval = params[1] !== false;
+          found.requiresApproval = params[1] !== false;
+        }
+      }
     }
     return { rows: found ? [found] : [], rowCount: found ? 1 : 0 };
   }
 
   if (lowerSql.startsWith('update tasks')) {
+    if (lowerSql.includes('where complaint_id =')) {
+      const complaintId = params[0];
+      const matched = mockDb.tasks.filter(t => t.complaint_id === complaintId);
+      matched.forEach(t => {
+        t.status = 'in-progress';
+      });
+      return { rows: matched, rowCount: matched.length };
+    }
+
     const id = params[1];
     const found = mockDb.tasks.find(t => t.id === id);
     if (found) {

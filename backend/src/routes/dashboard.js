@@ -28,7 +28,7 @@ router.get('/stats', authenticate, requireRole(['owner']), async (_req, res, nex
 router.get('/urgent-issues', authenticate, requireRole(['owner']), async (_req, res, next) => {
   try {
     const result = await db.query(`
-      SELECT id, title, type, severity 
+      SELECT id, title, message, type, severity 
       FROM notifications 
       ORDER BY created_at DESC 
       LIMIT 10

@@ -155,33 +155,63 @@ router.post('/', authenticate, requireRole(['owner']), async (req, res, next) =>
     let finalPartnerId = partnerId;
 
     if (!finalPartnerId) {
-      // Trigger Automatic AI Assignment Agent
-      const availablePartners = await db.query("SELECT id, name FROM users WHERE role = 'delivery_partner'");
-      if (availablePartners.rows.length > 0) {
-        const orderData = {
-          customer: customerName,
-          address: customerAddress,
-          items: validated.items,
-          priority: validated.priority
-        };
-        
-        const aiAssignment = await assignPartner(orderData, availablePartners.rows);
-        finalPartnerId = aiAssignment.partnerId || availablePartners.rows[0].id;
-        
-        await db.query('UPDATE orders SET partner_id = $1 WHERE id = $2', [finalPartnerId, orderId]);
-        result.rows[0].partner_id = finalPartnerId;
+      // Trigger Automatic AI Assignment Agent asynchronously in the background
+      (async () => {
+        try {
+          const availablePartners = await db.query("SELECT id, name FROM users WHERE role = 'delivery_partner'");
+          if (availablePartners.rows.length > 0) {
+            const orderData = {
+              customer: customerName,
+              address: customerAddress,
+              items: validated.items,
+              priority: validated.priority
+            };
+            
+            const aiAssignment = await assignPartner(orderData, availablePartners.rows);
+            const assignedPartnerId = aiAssignment.partnerId || availablePartners.rows[0].id;
+            
+            await db.query('UPDATE orders SET partner_id = $1 WHERE id = $2', [assignedPartnerId, orderId]);
+            
+            await logAIDecisions(
+              orderId,
+              'TaskAssignmentAgent',
+              aiAssignment.reasoning,
+              `Task created and assignment stored in database for partner #${assignedPartnerId}.`,
+              aiAssignment.confidence || 0.92
+            );
 
-        await logAIDecisions(
-          orderId,
-          'TaskAssignmentAgent',
-          aiAssignment.reasoning,
-          `Task created and assignment stored in database for partner #${finalPartnerId}.`,
-          aiAssignment.confidence || 0.92
-        );
-      }
-    }
+            const taskId = `TASK-${Date.now().toString().slice(-4)}`;
+            await db.query(`
+              INSERT INTO tasks (id, order_id, partner_id, status, priority, scheduled_time, notes)
+              VALUES ($1, $2, $3, $4, $5, $6, $7)
+            `, [
+              taskId,
+              orderId,
+              assignedPartnerId,
+              'pending',
+              validated.priority,
+              new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+              `Initial delivery task for ${customerName}`
+            ]);
 
-    if (finalPartnerId) {
+            // Notify Delivery Partner
+            await db.query(`
+              INSERT INTO notifications (receiver, message, type) VALUES ($1, $2, $3)
+            `, [assignedPartnerId, `New delivery task ${taskId} assigned for Order ${orderId}`, 'task']);
+
+            // Notify Owner
+            await db.query(`
+              INSERT INTO notifications (receiver, message, type) VALUES ($1, $2, $3)
+            `, ['owner', `AI Assignment: Partner #${assignedPartnerId} assigned to Order ${orderId}`, 'system']);
+
+            await logActivity('ORDER_AI_ASSIGNED', 'TaskAssignmentAgent', { orderId, taskId, partnerId: assignedPartnerId });
+          }
+        } catch (bgErr) {
+          console.error('Background AI Assignment Error:', bgErr);
+        }
+      })();
+    } else {
+      // Synchronous creation of task when manual partner is provided
       const taskId = `TASK-${Date.now().toString().slice(-4)}`;
       await db.query(`
         INSERT INTO tasks (id, order_id, partner_id, status, priority, scheduled_time, notes)
@@ -204,9 +234,9 @@ router.post('/', authenticate, requireRole(['owner']), async (req, res, next) =>
       // Notify Owner
       await db.query(`
         INSERT INTO notifications (receiver, message, type) VALUES ($1, $2, $3)
-      `, ['owner', `AI Assignment: Partner #${finalPartnerId} assigned to Order ${orderId}`, 'system']);
+      `, ['owner', `Partner #${finalPartnerId} assigned to Order ${orderId}`, 'system']);
 
-      await logActivity('ORDER_AI_ASSIGNED', 'TaskAssignmentAgent', { orderId, taskId, partnerId: finalPartnerId });
+      await logActivity('ORDER_ASSIGNED', 'System', { orderId, taskId, partnerId: finalPartnerId });
     }
 
     res.status(201).json({
