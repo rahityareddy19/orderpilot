@@ -113,7 +113,7 @@ SUPABASE_ANON_KEY=your_supabase_anon_key
 DATABASE_URL=postgresql://postgres:your_db_password@db.your-project-ref.supabase.co:5432/postgres
 JWT_SECRET=545390e273ba3b81185d22fcab460773ddb024cac23555e91c18251fdaaf7ec5
 GEMINI_API_KEY=your_gemini_api_key
-PORT=5000
+PORT=5001
 ```
 
 ### 2. Install & Start Application
@@ -125,7 +125,7 @@ npm install
 npm run build --prefix frontend
 npm start
 ```
-Open **[http://localhost:5000](http://localhost:5000)** in your browser.
+Open **[http://localhost:5173](http://localhost:5173)** (Vite development server) or **[http://localhost:5001](http://localhost:5001)** (production server) in your browser.
 
 ---
 
