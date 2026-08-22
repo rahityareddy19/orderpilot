@@ -44,6 +44,20 @@ const getMockResponse = (config) => {
   if (url.includes('/tasks') && config.method === 'patch') return Promise.resolve({ data: { task: { id: url.split('/')[2], status: 'updated' } } });
   if (url.endsWith('/tasks') || url.includes('/tasks/my-tasks') || url.includes('/dashboard/partner-tasks')) return Promise.resolve({ data: { tasks: partnerTasks } });
   
+  // Customer lookup by phone (used in Add Order form)
+  if (url.includes('/auth/customer-lookup')) {
+    const urlObj = new URL(url, 'http://localhost');
+    const phone = urlObj.searchParams.get('phone') || '';
+    // Import mockData customers if available, else use inline seed
+    const mockCustomers = [
+      { id: 1, name: 'Priya Customer', phone_number: '9876543210', address: '12, 100ft Road, Indiranagar, Bangalore' },
+      { id: 6, name: 'Priya Sharma', phone_number: '9999900001', address: '77, JP Nagar 3rd Phase, Bangalore' },
+    ];
+    const match = mockCustomers.find(c => c.phone_number === phone);
+    if (match) return Promise.resolve({ data: { customer: match } });
+    return Promise.reject({ response: { status: 404, data: { error: 'No customer found with that phone number' } } });
+  }
+
   // General Data routes
   if (url.includes('/orders/')) {
     const id = url.split('/orders/')[1];

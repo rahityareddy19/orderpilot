@@ -2,7 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-require('dotenv').config();
+// Load .env relative to this file's location so Vercel (CWD = project root) also finds it
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const db = require('./db');
 
 const authRoutes = require('./routes/auth');

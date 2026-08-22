@@ -79,9 +79,8 @@ export default function OwnerOrders() {
       setOrderForm(f => ({ ...f, customerLookupStatus: 'loading' }));
       lookupTimeout.current = setTimeout(async () => {
         try {
-          const res = await api.get('/auth/customers');
-          const customers = res.data?.customers || [];
-          const match = customers.find(c => c.phone_number === phone);
+          const res = await api.get(`/auth/customer-lookup?phone=${encodeURIComponent(phone.trim())}`);
+          const match = res.data?.customer;
           if (match) {
             setOrderForm(f => ({
               ...f,
@@ -92,8 +91,9 @@ export default function OwnerOrders() {
           } else {
             setOrderForm(f => ({ ...f, customerName: '', customerAddress: '', customerLookupStatus: 'not-found' }));
           }
-        } catch {
-          setOrderForm(f => ({ ...f, customerLookupStatus: 'not-found' }));
+        } catch (err) {
+          // 404 means customer not found; any other error also shows not-found UI
+          setOrderForm(f => ({ ...f, customerName: '', customerAddress: '', customerLookupStatus: 'not-found' }));
         }
       }, 600);
     }

@@ -1,5 +1,6 @@
 const { Pool } = require('pg');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
 const isProduction = process.env.NODE_ENV === 'production';
 let pool = null;
@@ -474,6 +475,12 @@ async function executeQuery(text, params = []) {
       }
       if (lowerSql.includes("role = 'delivery_partner'")) {
         const found = mockDb.users.filter(u => u.role === 'delivery_partner');
+        return { rows: found, rowCount: found.length };
+      }
+      // Customer lookup by phone (customer-lookup endpoint): role='customer' AND phone_number=$1
+      if (lowerSql.includes("role = 'customer'") && lowerSql.includes('phone_number = $1')) {
+        const phoneParam = params[0];
+        const found = mockDb.users.filter(u => u.role === 'customer' && u.phone_number === phoneParam);
         return { rows: found, rowCount: found.length };
       }
       if (lowerSql.includes("role = 'customer'")) {

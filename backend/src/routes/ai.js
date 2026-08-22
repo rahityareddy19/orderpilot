@@ -36,7 +36,7 @@ router.post('/workflow', async (req, res, next) => {
 // POST /api/ai/analyze
 router.post('/analyze', async (req, res, next) => {
   try {
-    const { orderId, complaintText, orders } = req.body;
+    const { orderId, complaintText, orders, customerName } = req.body;
     let targetInput = null;
 
     if (Array.isArray(orders) && orders.length > 0) {
@@ -46,7 +46,8 @@ router.post('/analyze', async (req, res, next) => {
       targetInput = orderRes.rows[0] ? [orderRes.rows[0]] : [{ id: orderId || 'ORD-GENERIC', customer: 'Customer', items: [] }];
     }
 
-    const analysis = await analyzeComplaint(targetInput, complaintText || '');
+    // Pass the real logged-in customer name so the AI addresses them correctly
+    const analysis = await analyzeComplaint(targetInput, complaintText || '', customerName || '');
     res.json({ analysis });
   } catch (error) {
     next(error);

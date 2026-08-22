@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const db = require('../db');
@@ -245,6 +245,31 @@ router.get('/customers', authenticate, requireRole(['owner']), async (_req, res,
     res.json({ customers: result.rows });
   } catch (error) {
     console.error('GET /api/auth/customers Error:', error);
+    next(error);
+  }
+});
+
+// GET /api/auth/customer-lookup?phone=... (Owner only)
+// Looks up a single customer by phone number for the Add Order form.
+router.get('/customer-lookup', authenticate, requireRole(['owner']), async (req, res, next) => {
+  try {
+    const { phone } = req.query;
+    if (!phone) {
+      return res.status(400).json({ error: 'phone query parameter is required' });
+    }
+
+    const result = await db.query(
+      "SELECT id, name, email, phone_number, address FROM users WHERE role = 'customer' AND phone_number = $1 LIMIT 1",
+      [phone.trim()]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'No customer found with that phone number' });
+    }
+
+    res.json({ customer: result.rows[0] });
+  } catch (error) {
+    console.error('GET /api/auth/customer-lookup Error:', error);
     next(error);
   }
 });

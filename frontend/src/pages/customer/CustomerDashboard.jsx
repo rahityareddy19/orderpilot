@@ -18,11 +18,22 @@ export default function CustomerDashboard() {
   const [loading, setLoading] = useState(true);
 
   // AI Assistant Chat State
+  const firstName = user?.name ? user.name.split(' ')[0] : 'there';
   const [chatMessages, setChatMessages] = useState([
-    { sender: 'ai', text: `Hello ${user?.name || 'there'}! I am OrderPilot AI. Ask me about your order status, delivery timelines, or raise an issue.` }
+    { sender: 'ai', text: `Hello ${firstName}! 👋 I am OrderPilot AI. How was your day? What can I help you with today — order status, delivery timelines, or something else?` }
   ]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+
+  // Re-sync greeting if user loads after mount (e.g. from API)
+  useEffect(() => {
+    if (user?.name) {
+      const name = user.name.split(' ')[0];
+      setChatMessages([
+        { sender: 'ai', text: `Hello ${name}! 👋 I am OrderPilot AI. How was your day? What can I help you with today — order status, delivery timelines, or something else?` }
+      ]);
+    }
+  }, [user?.name]);
 
   // Profile Edit State
   const [profileData, setProfileData] = useState({
@@ -75,7 +86,8 @@ export default function CustomerDashboard() {
       const res = await api.post('/ai/analyze', { 
         complaintText: userText, 
         orderId: orders[0]?.id || 'ORD-1024',
-        orders: orders
+        orders: orders,
+        customerName: user?.name || ''
       });
       const summary = res.data?.analysis?.customerReply || res.data?.analysis?.summary || 'I have analyzed your query and flagged it for your delivery team.';
       setChatMessages(prev => [...prev, { sender: 'ai', text: summary }]);
